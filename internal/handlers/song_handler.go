@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"EffectiveMobile/api"
-	"EffectiveMobile/config"
-	"EffectiveMobile/log"
-	"EffectiveMobile/models"
-	"EffectiveMobile/repository"
+	"EffectiveMobile/internal/config"
+	"EffectiveMobile/internal/models"
+	"EffectiveMobile/internal/repository"
+	"EffectiveMobile/pkg/api"
+	"EffectiveMobile/pkg/log"
 	"database/sql"
 	"encoding/json"
 	"html/template"
@@ -198,7 +198,7 @@ func RenderSongText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Парсим шаблон для отображения куплета
-	tmpl, err := template.ParseFiles("templates/song_text.html")
+	tmpl, err := template.ParseFiles("internal/templates/song_text.html")
 	if err != nil {
 		log.Logger.Error("Error loading template:", err)
 		http.Error(w, "Error loading template", http.StatusInternalServerError)

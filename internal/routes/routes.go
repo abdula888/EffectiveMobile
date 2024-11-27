@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"EffectiveMobile/handlers"
+	"EffectiveMobile/internal/handlers"
 	"html/template"
 	"net/http"
 )

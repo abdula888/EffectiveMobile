@@ -3,7 +3,7 @@ package migrations
 import (
 	"database/sql"
 
-	"EffectiveMobile/log"
+	"EffectiveMobile/pkg/log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -20,8 +20,8 @@ func RunMigrations(db *sql.DB) error {
 
 	// Создаём мигратор
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations", // Путь к папке с миграциями
-		"postgres",          // Имя базы данных
+		"file://internal/migrations", // Путь к папке с миграциями
+		"postgres",                   // Имя базы данных
 		driver,
 	)
 	if err != nil {

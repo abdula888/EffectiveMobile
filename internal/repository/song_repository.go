@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"EffectiveMobile/models"
+	"EffectiveMobile/internal/models"
 	"database/sql"
 	"strconv"
 )
@@ -99,7 +99,7 @@ func UpdateSongByName(db *sql.DB, song models.Song) error {
 	// Сохраняем данные в БД
 	_, err := db.Exec(
 		`UPDATE songs SET text = $1, releaseDate = $2, link = $3 
-		WHERE group_id = (SELECT group_id FROM groups WHERE group_name = $4) AND song = $5`,
+		WHERE group_id = (SELECT group_id FROM groups WHERE group_name = $4) AND song_name = $5`,
 		song.Text,
 		song.ReleaseDate,
 		song.Link,

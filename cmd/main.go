@@ -1,10 +1,10 @@
 package main
 
 import (
-	"EffectiveMobile/config"
-	"EffectiveMobile/log"
-	"EffectiveMobile/migrations"
-	"EffectiveMobile/routes"
+	"EffectiveMobile/internal/config"
+	"EffectiveMobile/internal/migrations"
+	"EffectiveMobile/internal/routes"
+	"EffectiveMobile/pkg/log"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -43,18 +43,18 @@ func main() {
 	log.Logger.Info("Migrations applied successfully")
 
 	// Парсинг шаблона HTML для добавления песни
-	tmplAddSong, err := template.ParseFiles(filepath.Join("templates", "add_song.html"))
+	tmplAddSong, err := template.ParseFiles(filepath.Join("internal/templates", "add_song.html"))
 	if err != nil {
 		log.Logger.Fatal("Error parsing add_song template: ", err)
 	}
 	log.Logger.Debug("add_song template parsed successfully")
 
 	// Парсинг шаблона HTML для отображения списка песен
-	tmplSongs := template.Must(template.New("songs.html").Funcs(templateFuncs).ParseFiles("templates/songs.html"))
+	tmplSongs := template.Must(template.New("songs.html").Funcs(templateFuncs).ParseFiles("internal/templates/songs.html"))
 	log.Logger.Debug("songs template parsed successfully")
 
 	// Парсинг шаблона HTML для удаления песни
-	tmplDeleteSong, err := template.ParseFiles(filepath.Join("templates", "delete_song.html"))
+	tmplDeleteSong, err := template.ParseFiles(filepath.Join("internal/templates", "delete_song.html"))
 	if err != nil {
 		log.Logger.Fatal("Error parsing delete_song template: ", err)
 	}
