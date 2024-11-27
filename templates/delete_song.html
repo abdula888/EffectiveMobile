@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Song</title>
+</head>
+
+<body>
+    <h1>Delete Song</h1>
+    <label>Group: <input type="text" id="group" /></label><br />
+    <label>Song: <input type="text" id="song" /></label><br />
+    <button id="sendDeleteRequest">Delete Song</button>
+
+    <script>
+        document.getElementById('sendDeleteRequest').addEventListener('click', function () {
+            // Получаем значения из полей ввода
+            const songData = {
+                "group": document.getElementById('group').value,
+                "song": document.getElementById('song').value
+            };
+
+            // Отправка DELETE-запроса
+            fetch('http://localhost:8080/songs/', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(songData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 400) {
+                            throw new Error('Group and Song fields cannot be empty');
+                        }
+                        if (response.status === 404) {
+                            throw new Error('Song not found');
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    alert('Song deleted successfully!');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(`Error deleting song: ${error.message}`);
+                });
+
+        });
+    </script>
+</body>
+
+</html>

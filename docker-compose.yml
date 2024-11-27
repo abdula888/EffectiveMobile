@@ -1,0 +1,26 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Порт для доступа к вашему приложению
+    depends_on:
+      - db # Зависимость от базы данных
+    env_file:
+      - .env # Подключение файла .env
+
+  db:
+    image: postgres:15
+    restart: always
+    ports:
+      - "5433:5432" # Порт для доступа к PostgreSQL
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_DB: yourdatabase
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
