@@ -2,10 +2,10 @@ package main
 
 import (
 	"EffectiveMobile/config"
+	"EffectiveMobile/log"
 	"EffectiveMobile/migrations"
 	"EffectiveMobile/routes"
 	"html/template"
-	"log"
 	"net/http"
 	"path/filepath"
 
@@ -25,43 +25,46 @@ var templateFuncs = template.FuncMap{
 func main() {
 	// Загрузка переменных окружения из файла .env
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Logger.Warn("Error loading .env file, using defaults")
 	}
 
 	// Инициализация базы данных
 	db, err := config.InitDB()
 	if err != nil {
-		log.Fatal("Failed to connect to the database:", err)
+		log.Logger.Fatal("Failed to connect to the database:", err)
 	}
+	log.Logger.Info("Successfully connected to the database")
 	defer db.Close()
 
 	// Применение миграций
 	if err := migrations.RunMigrations(db); err != nil {
-		log.Fatal("Error applying migration: ", err)
+		log.Logger.Fatal("Error applying migration: ", err)
 	}
+	log.Logger.Info("Migrations applied successfully")
 
 	// Парсинг шаблона HTML для добавления песни
 	tmplAddSong, err := template.ParseFiles(filepath.Join("templates", "add_song.html"))
 	if err != nil {
-		log.Fatal("Error parsing add_song template: ", err)
+		log.Logger.Fatal("Error parsing add_song template: ", err)
 	}
+	log.Logger.Debug("add_song template parsed successfully")
 
 	// Парсинг шаблона HTML для отображения списка песен
 	tmplSongs := template.Must(template.New("songs.html").Funcs(templateFuncs).ParseFiles("templates/songs.html"))
-	if err != nil {
-		log.Fatal("Error parsing songs template: ", err)
-	}
+	log.Logger.Debug("songs template parsed successfully")
 
 	// Парсинг шаблона HTML для удаления песни
 	tmplDeleteSong, err := template.ParseFiles(filepath.Join("templates", "delete_song.html"))
 	if err != nil {
-		log.Fatal("Error parsing add_song template: ", err)
+		log.Logger.Fatal("Error parsing delete_song template: ", err)
 	}
+	log.Logger.Debug("delete_song template parsed successfully")
 
 	// Регистрация маршрутов
 	routes.RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong)
+	log.Logger.Info("Routes registered successfully")
 
 	// Запуск сервера
-	log.Println("Server started on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Logger.Info("Server started on port 8080")
+	log.Logger.Fatal(http.ListenAndServe(":8080", nil))
 }

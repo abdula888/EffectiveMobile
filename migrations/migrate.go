@@ -2,12 +2,13 @@ package migrations
 
 import (
 	"database/sql"
-	"log"
 
-	"github.com/golang-migrate/migrate/v4" // Migrate library
+	"EffectiveMobile/log"
+
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // File source for migrations
-	_ "github.com/lib/pq"                                // PostgreSQL driver
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
 func RunMigrations(db *sql.DB) error {
@@ -32,6 +33,6 @@ func RunMigrations(db *sql.DB) error {
 		return err
 	}
 
-	log.Println("Migrations applied successfully!")
+	log.Logger.Info("Migrations applied successfully!")
 	return nil
 }
