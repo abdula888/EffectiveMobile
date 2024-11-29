@@ -4,6 +4,7 @@ import (
 	"EffectiveMobile/internal/models"
 	"database/sql"
 	"strconv"
+	"time"
 )
 
 func GetSongsWithPagination(db *sql.DB, limit, offset int, group, song, releaseDate string) ([]models.Song, error) {
@@ -61,10 +62,16 @@ func GetSongsWithPagination(db *sql.DB, limit, offset int, group, song, releaseD
 
 	for rows.Next() {
 		var song models.Song
-		err := rows.Scan(&song.GroupName, &song.Song, &song.Text, &song.ReleaseDate, &song.Link)
+		var releaseDate time.Time
+
+		err := rows.Scan(&song.GroupName, &song.Song, &song.Text, &releaseDate, &song.Link)
 		if err != nil {
 			return nil, err
 		}
+
+		// Преобразуем дату в формат 2006-01-02
+		song.ReleaseDate = releaseDate.Format("2006-01-02")
+
 		songs = append(songs, song)
 	}
 	return songs, nil
@@ -88,10 +95,15 @@ func GetSongByName(db *sql.DB, groupName string, songName string) (*models.Song,
     WHERE 
         g.group_name = $1 AND s.song_name = $2;
 `
-	err := db.QueryRow(query, groupName, songName).Scan(&song.GroupName, &song.Song, &song.Text, &song.ReleaseDate, &song.Link)
+	var releaseDate time.Time
+
+	err := db.QueryRow(query, groupName, songName).Scan(&song.GroupName, &song.Song, &song.Text, &releaseDate, &song.Link)
 	if err != nil {
 		return nil, err
 	}
+
+	// Преобразуем дату в формат 2006-01-02
+	song.ReleaseDate = releaseDate.Format("2006-01-02")
 	return &song, nil
 }
 
