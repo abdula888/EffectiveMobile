@@ -28,9 +28,10 @@ type LastFmResponse struct {
 // Функция для обращения к Last.fm API
 func GetLastFmData(artist string, track string) (LastFmResponse, error) {
 	apiKey := os.Getenv("LASTFM_API_KEY")
-	apiURL := fmt.Sprintf("https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=%s&artist=%s&track=%s&format=json", apiKey, url.QueryEscape(artist), url.QueryEscape(track))
+	apiURL := os.Getenv("LASTFM_API_URL")
+	fullURL := fmt.Sprintf("%s&api_key=%s&artist=%s&track=%s&format=json", apiURL, apiKey, url.QueryEscape(artist), url.QueryEscape(track))
 
-	resp, err := http.Get(apiURL)
+	resp, err := http.Get(fullURL)
 	if err != nil {
 		return LastFmResponse{}, fmt.Errorf("error making API request: %v", err)
 	}

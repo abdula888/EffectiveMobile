@@ -22,9 +22,10 @@ type AudDResponse struct {
 // Функция для обращения к AudD API
 func GetAudDData(artist string, track string) (AudDResponse, error) {
 	apiKey := os.Getenv("AUDD_API_KEY")
-	apiURL := fmt.Sprintf("https://api.audd.io/findLyrics/?q=%s+%s&api_token=%s", url.QueryEscape(artist), url.QueryEscape(track), apiKey)
+	apiURL := os.Getenv("AUDD_API_URL")
+	fullURL := fmt.Sprintf("%s?q=%s+%s&api_token=%s", apiURL, url.QueryEscape(artist), url.QueryEscape(track), apiKey)
 
-	resp, err := http.Get(apiURL)
+	resp, err := http.Get(fullURL)
 	if err != nil {
 		return AudDResponse{}, fmt.Errorf("error making API request: %v", err)
 	}
