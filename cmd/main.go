@@ -6,7 +6,6 @@ import (
 	"EffectiveMobile/internal/routes"
 	"EffectiveMobile/pkg/log"
 	"html/template"
-	"net/http"
 	"path/filepath"
 
 	"github.com/joho/godotenv" // для загрузки конфигурации из .env
@@ -40,7 +39,6 @@ func main() {
 	if err := migrations.RunMigrations(db); err != nil {
 		log.Logger.Fatal("Error applying migration: ", err)
 	}
-	log.Logger.Info("Migrations applied successfully")
 
 	// Парсинг шаблона HTML для добавления песни
 	tmplAddSong, err := template.ParseFiles(filepath.Join("internal/templates", "add_song.html"))
@@ -61,10 +59,10 @@ func main() {
 	log.Logger.Debug("delete_song template parsed successfully")
 
 	// Регистрация маршрутов
-	routes.RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong)
+	r := routes.RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong)
 	log.Logger.Info("Routes registered successfully")
 
 	// Запуск сервера
 	log.Logger.Info("Server started on port 8080")
-	log.Logger.Fatal(http.ListenAndServe(":8080", nil))
+	log.Logger.Fatal(r.Run(":8080"))
 }

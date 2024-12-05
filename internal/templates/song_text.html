@@ -49,11 +49,11 @@
 
         <div>
             {{ if .HasPrev }}
-            <a href="/songs/{{ .GroupName }}+{{ .Song }}?verse={{ .PrevVerse }}/">Previous Verse</a>
+            <a href="/groups/{{ .GroupName }}/songs/{{ .Song }}?verse={{ .PrevVerse }}">Previous Verse</a>
             {{ end }}
 
             {{ if .HasNext }}
-            <a href="/songs/{{ .GroupName }}+{{ .Song }}?verse={{ .NextVerse }}/">Next Verse</a>
+            <a href="/groups/{{ .GroupName }}/songs/{{ .Song }}?verse={{ .NextVerse }}">Next Verse</a>
             {{ end }}
         </div>
         
@@ -118,7 +118,7 @@
             .then(data => {
                 console.log('Success:', data);
                 alert('Song updated successfully!');
-                window.location.href = '/songs/{{ .GroupName }}+{{ .Song }}?verse=1/'; // Обновляем страницу
+                window.location.href = '/groups/{{ .GroupName }}/songs/{{ .Song }}?verse=1'; // Обновляем страницу
             })
             .catch(error => {
                 console.error('Error:', error);

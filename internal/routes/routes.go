@@ -4,47 +4,47 @@ import (
 	"EffectiveMobile/internal/handlers"
 	"html/template"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) {
-	// Обработчик для отображения страницы добавления песни
-	http.HandleFunc("/songs/add_song/", func(w http.ResponseWriter, r *http.Request) {
-		err := tmplAddSong.Execute(w, nil) // Отображаем HTML-страницу
+func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *gin.Engine {
+	r := gin.Default()
+
+	r.GET("/songs/add_song/", func(c *gin.Context) {
+		err := tmplAddSong.Execute(c.Writer, nil) // Отображаем HTML-страницу
 		if err != nil {
-			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			http.Error(c.Writer, "Error rendering template", http.StatusInternalServerError)
 			return
 		}
 	})
 
-	// Обработчик для отображения страницы удаления песни
-	http.HandleFunc("/songs/delete_song/", func(w http.ResponseWriter, r *http.Request) {
-		err := tmplDeleteSong.Execute(w, nil) // Отображаем HTML-страницу
+	r.POST("/songs/add_song/", func(c *gin.Context) {
+		handlers.AddSong(c)
+	})
+
+	r.GET("/songs/delete_song/", func(c *gin.Context) {
+		err := tmplDeleteSong.Execute(c.Writer, nil) // Отображаем HTML-страницу
 		if err != nil {
-			http.Error(w, "Error rendering template", http.StatusInternalServerError)
+			http.Error(c.Writer, "Error rendering template", http.StatusInternalServerError)
 			return
 		}
 	})
 
-	// Обработчик для отображения списка песен в HTML-формате
-	http.HandleFunc("/songs/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			path := r.URL.Path
-			if path == "/songs/" {
-				// Получаем песни и передаем их в шаблон
-				handlers.RenderSongsList(w, r, tmplSongs)
-			} else {
-				// Здесь мы обрабатываем путь вида /songs/{group_name}+{song_name}/
-				handlers.RenderSongText(w, r)
-			}
-		case "POST":
-			handlers.AddSong(w, r)
-		case "DELETE":
-			handlers.DeleteSong(w, r)
-		case "PUT":
-			handlers.UpdateSong(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
+	r.DELETE("/songs/delete_song/", func(c *gin.Context) {
+		handlers.DeleteSong(c)
 	})
+
+	r.GET("/groups/:groupName/songs/:songName", func(c *gin.Context) {
+		handlers.RenderSongText(c)
+	})
+
+	r.GET("/songs/", func(c *gin.Context) {
+		handlers.RenderSongsList(c, tmplSongs)
+	})
+
+	r.PUT("/songs/", func(c *gin.Context) {
+		handlers.UpdateSong(c)
+	})
+	return r
 }

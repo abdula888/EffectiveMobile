@@ -28,7 +28,7 @@
         {{ range .Songs }}
         <li>
             <strong>{{ .GroupName }}</strong> - 
-            <a href="/songs/{{ .GroupName }}+{{ .Song }}?verse=1/">{{ .Song }}</a> 
+            <a href="/groups/{{ .GroupName }}/songs/{{ .Song }}?verse=1">{{ .Song }}</a> 
             (Released: {{ .ReleaseDate }})
             <a href="{{ .Link }}" target="_blank"> Link on Youtube</a>
         </li>

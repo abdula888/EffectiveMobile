@@ -11,7 +11,7 @@ services:
       - .env # Подключение файла .env
 
   db:
-    image: postgres:15
+    image: postgres
     restart: always
     ports:
       - "5433:5432" # Порт для доступа к PostgreSQL

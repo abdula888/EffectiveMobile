@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Функция для парсинга даты в формат Go
@@ -36,7 +38,9 @@ type Media struct {
 	URL      string `json:"url"`
 }
 
-func RenderSongsList(w http.ResponseWriter, r *http.Request, tmpl *template.Template) {
+func RenderSongsList(c *gin.Context, tmpl *template.Template) {
+	r, w := c.Request, c.Writer
+
 	// Получаем параметры фильтра
 	group := r.URL.Query().Get("group")
 	song := r.URL.Query().Get("song")
@@ -107,21 +111,10 @@ func RenderSongsList(w http.ResponseWriter, r *http.Request, tmpl *template.Temp
 }
 
 // RenderSongText отображает полный текст песни
-func RenderSongText(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем часть пути после "/songs/"
-	path := r.URL.Path[len("/songs/"):]
-	log.Logger.Debugf("Request path: %s", path)
-
-	// Разбиваем строку на группу и песню
-	parts := strings.SplitN(path, "+", 2)
-	if len(parts) != 2 {
-		log.Logger.Warnf("Invalid song URL: %s", path)
-		http.Error(w, "Invalid song URL", http.StatusBadRequest)
-		return
-	}
-
-	groupName := parts[0]
-	songName := parts[1]
+func RenderSongText(c *gin.Context) {
+	r, w := c.Request, c.Writer
+	groupName := c.Param("groupName")
+	songName := c.Param("songName")
 	log.Logger.Debugf("Group: %s, Song: %s", groupName, songName)
 
 	// Подключаемся к базе данных
@@ -216,7 +209,8 @@ func RenderSongText(w http.ResponseWriter, r *http.Request) {
 	log.Logger.Infof("Template rendered successfully for song %s - %s, verse %d", groupName, songName, verseNumber)
 }
 
-func UpdateSong(w http.ResponseWriter, r *http.Request) {
+func UpdateSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
 	var song models.Song
 	err := json.NewDecoder(r.Body).Decode(&song)
 	if err != nil {
@@ -249,7 +243,8 @@ func UpdateSong(w http.ResponseWriter, r *http.Request) {
 }
 
 // Основная функция добавления песни
-func AddSong(w http.ResponseWriter, r *http.Request) {
+func AddSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
 	var song models.Song
 	err := json.NewDecoder(r.Body).Decode(&song)
 	if err != nil {
@@ -361,7 +356,8 @@ func AddSong(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(Response{Message: "Song added successfully"})
 }
 
-func DeleteSong(w http.ResponseWriter, r *http.Request) {
+func DeleteSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
 	var song models.Song
 	err := json.NewDecoder(r.Body).Decode(&song)
 	if err != nil {
