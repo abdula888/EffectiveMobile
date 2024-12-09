@@ -1,0 +1,135 @@
+basePath: /songs/
+definitions:
+  models.Song:
+    properties:
+      groupID:
+        type: integer
+      groupName:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      releaseDate:
+        type: string
+      songName:
+        type: string
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server for Music Library.
+  title: Music Library
+  version: "1.0"
+paths:
+  /groups/:groupName/songs/:songName:
+    get:
+      description: display song's info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Song'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: RenderSongTextHandler
+      tags:
+      - song
+  /songs/:
+    get:
+      description: display list of songs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Song'
+            type: array
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: RenderSongsListHandler
+      tags:
+      - songs
+    put:
+      consumes:
+      - application/json
+      description: update song
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Song'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: UpdateSongHandler
+      tags:
+      - songs
+  /songs/add_song/:
+    post:
+      consumes:
+      - application/json
+      description: add song
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Song'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: AddSongHandler
+      tags:
+      - add_song
+  /songs/delete_song/:
+    delete:
+      consumes:
+      - application/json
+      description: delete song
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Song'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: DeleteSongHandler
+      tags:
+      - delete_song
+swagger: "2.0"

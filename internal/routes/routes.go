@@ -5,11 +5,17 @@ import (
 	"html/template"
 	"net/http"
 
+	_ "EffectiveMobile/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *gin.Engine {
 	r := gin.Default()
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.GET("/songs/add_song/", func(c *gin.Context) {
 		err := tmplAddSong.Execute(c.Writer, nil) // Отображаем HTML-страницу

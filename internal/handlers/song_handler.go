@@ -37,6 +37,15 @@ type Media struct {
 	URL      string `json:"url"`
 }
 
+// @Summary RenderSongsListHandler
+// @Tags songs
+// @Description display list of songs
+// @Produce      json
+// @Success      200  {object}  []models.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router /songs/ [get]
 func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
 	r, w := c.Request, c.Writer
 
@@ -108,7 +117,15 @@ func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
 	log.Logger.Info("Template rendered successfully")
 }
 
-// RenderSongText отображает полный текст песни
+// @Summary RenderSongTextHandler
+// @Tags song
+// @Description display song's info
+// @Produce      json
+// @Success      200  {object}  models.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router /groups/:groupName/songs/:songName [get]
 func RenderSongTextHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	groupName := c.Param("groupName")
@@ -206,6 +223,14 @@ func RenderSongTextHandler(c *gin.Context) {
 	log.Logger.Infof("Template rendered successfully for song %s - %s, verse %d", groupName, songName, verseNumber)
 }
 
+// @Summary UpdateSongHandler
+// @Tags songs
+// @Description update song
+// @Accept      json
+// @Success      200  {object}  models.Song
+// @Failure      400  {object}  error
+// @Failure      500  {object}  error
+// @Router /songs/ [put]
 func UpdateSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON models.SongJSON
@@ -240,7 +265,15 @@ func UpdateSongHandler(c *gin.Context) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Song updated successfully!"})
 }
 
-// Основная функция добавления песни
+// @Summary AddSongHandler
+// @Tags add_song
+// @Description add song
+// @Accept      json
+// @Success      201  {object}  models.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object} error
+// @Router /songs/add_song/ [post]
 func AddSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON models.SongJSON
@@ -333,6 +366,15 @@ func AddSongHandler(c *gin.Context) {
 	json.NewEncoder(w).Encode(Response{Message: "Song added successfully"})
 }
 
+// @Summary DeleteSongHandler
+// @Tags delete_song
+// @Description delete song
+// @Accept      json
+// @Success      200  {object}  models.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router /songs/delete_song/ [delete]
 func DeleteSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON models.SongJSON

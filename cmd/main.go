@@ -21,6 +21,12 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
+// @title           Music Library
+// @version         1.0
+// @description     API Server for Music Library.
+
+// @host      localhost:8080
+// @BasePath  /songs/
 func main() {
 	// Загрузка переменных окружения из файла .env
 	if err := godotenv.Load(".env"); err != nil {
