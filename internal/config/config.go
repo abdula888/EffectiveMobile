@@ -1,22 +1,16 @@
 package config
 
 import (
-	"database/sql"
-	"os"
-
 	_ "github.com/lib/pq" // Подключение к Postgres
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 // Функция для инициализации подключения к базе данных
-func InitDB() (*sql.DB, error) {
-	databaseURL := os.Getenv("DATABASE_URL") // URL базы данных из .env
-	db, err := sql.Open("postgres", databaseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	// Проверка подключения
-	err = db.Ping()
+func InitDB() (*gorm.DB, error) {
+	dsn := "host=localhost user=test_user dbname=test_db password=password sslmode=disable" // для go run
+	//databaseURL := os.Getenv("DATABASE_URL") // URL базы данных из .env для Docker
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

@@ -2,69 +2,29 @@ package repository
 
 import (
 	"EffectiveMobile/internal/models"
-	"database/sql"
-	"strconv"
+	"errors"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-func GetSongsWithPagination(db *sql.DB, limit, offset int, group, song, releaseDate string) ([]models.Song, error) {
+func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDate string) ([]models.Song, error) {
 	var songs []models.Song
+	groupName, songName = "%"+groupName+"%", "%"+songName+"%"
 
-	query := `
-        SELECT 
-            g.group_name, 
-            s.song_name, 
-            s.text, 
-            s.releaseDate, 
-            s.link
-        FROM 
-            songs s
-        JOIN 
-            groups g 
-        ON 
-            s.group_id = g.group_id
-        WHERE 1=1
-    `
+	rows, err := db.Table("songs s").Joins("join groups g on s.group_id = g.id").
+		Select("g.group_name, s.song_name, s.text, s.release_date, s.link").Limit(limit).Offset(offset).
+		Where("s.song_name LIKE ? AND g.group_name LIKE ?", songName, groupName).Order("group_id").Rows()
 
-	var args []interface{}
-	argIndex := 1
-
-	// Фильтр по названию группы
-	if group != "" {
-		query += " AND g.group_name LIKE $" + strconv.Itoa(argIndex)
-		args = append(args, "%"+group+"%")
-		argIndex++
-	}
-
-	// Фильтр по названию песни
-	if song != "" {
-		query += " AND s.song_name LIKE $" + strconv.Itoa(argIndex)
-		args = append(args, "%"+song+"%")
-		argIndex++
-	}
-
-	// Фильтр по дате релиза
-	if releaseDate != "" {
-		query += " AND s.releaseDate = $" + strconv.Itoa(argIndex)
-		args = append(args, releaseDate)
-		argIndex++
-	}
-
-	// Сортировка и лимит
-	query += " ORDER BY g.group_name LIMIT $" + strconv.Itoa(argIndex) + " OFFSET $" + strconv.Itoa(argIndex+1)
-	args = append(args, limit, offset)
-
-	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var song models.Song
 		var releaseDate time.Time
 
-		err := rows.Scan(&song.GroupName, &song.Song, &song.Text, &releaseDate, &song.Link)
+		err := rows.Scan(&song.GroupName, &song.SongName, &song.Text, &releaseDate, &song.Link)
 		if err != nil {
 			return nil, err
 		}
@@ -77,48 +37,47 @@ func GetSongsWithPagination(db *sql.DB, limit, offset int, group, song, releaseD
 	return songs, nil
 }
 
-func GetSongByName(db *sql.DB, groupName string, songName string) (*models.Song, error) {
-	var song models.Song
-	query := `
-    SELECT 
-        g.group_name, 
-        s.song_name, 
-        s.text, 
-        s.releaseDate, 
-        s.link
-    FROM 
-        songs s
-    JOIN 
-        groups g 
-    ON 
-        s.group_id = g.group_id
-    WHERE 
-        g.group_name = $1 AND s.song_name = $2;
-`
-	var releaseDate time.Time
+func GetSongText(db *gorm.DB, groupName string, songName string) (*models.Song, error) {
+	var song *models.Song
 
-	err := db.QueryRow(query, groupName, songName).Scan(&song.GroupName, &song.Song, &song.Text, &releaseDate, &song.Link)
-	if err != nil {
-		return nil, err
-	}
+	db.Table("songs s").Joins("join groups g on s.group_id = g.id").
+		Where("s.song_name = ? AND g.group_name = ?", songName, groupName).Last(&song)
 
-	// Преобразуем дату в формат 2006-01-02
-	song.ReleaseDate = releaseDate.Format("2006-01-02")
-	return &song, nil
+	song.GroupName = groupName
+
+	return song, nil
 }
 
-func UpdateSongByName(db *sql.DB, song models.Song) error {
-	// Сохраняем данные в БД
-	_, err := db.Exec(
-		`UPDATE songs SET text = $1, releaseDate = $2, link = $3 
-		WHERE group_id = (SELECT group_id FROM groups WHERE group_name = $4) AND song_name = $5`,
-		song.Text,
-		song.ReleaseDate,
-		song.Link,
-		song.GroupName,
-		song.Song,
-	)
+func UpdateSong(db *gorm.DB, song models.Song) error {
+	db.Model(&song).Where("group_id = ? AND song_name = ?", song.GroupID, song.SongName).Updates(models.Song{Text: song.Text, ReleaseDate: song.ReleaseDate, Link: song.Link})
 
+	return nil
+}
+
+func AddSong(db *gorm.DB, song models.Song) error {
+	group := &models.Group{GroupName: song.GroupName}
+	err := db.First(&group, "group_name = ?", group.GroupName).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = db.Create(&group).First(&group, "group_name = ?", group.GroupName).Error
+		if err != nil {
+			return err
+		}
+	}
+	song.GroupID = group.ID
+	err = db.Create(&song).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteSong(db *gorm.DB, songName, groupName string) error {
+	var group models.Group
+	err := db.First(&group, "group_name = ?", groupName).Error
+	if err != nil {
+		return err
+	}
+	err = db.Where("song_name = ? AND group_id = ?", songName, group.ID).Delete(&models.Song{}).Error
 	if err != nil {
 		return err
 	}

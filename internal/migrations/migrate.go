@@ -1,35 +1,17 @@
 package migrations
 
 import (
-	"database/sql"
-
+	"EffectiveMobile/internal/models"
 	"EffectiveMobile/pkg/log"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	"gorm.io/gorm"
 )
 
-func RunMigrations(db *sql.DB) error {
-	// Настраиваем драйвер для работы с PostgreSQL
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+func RunMigrations(db *gorm.DB) error {
+	err := db.AutoMigrate(&models.Group{}, &models.Song{})
 	if err != nil {
-		return err
-	}
-
-	// Создаём мигратор
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://internal/migrations", // Путь к папке с миграциями
-		"postgres",                   // Имя базы данных
-		driver,
-	)
-	if err != nil {
-		return err
-	}
-
-	// Применяем миграции
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
 	}
 

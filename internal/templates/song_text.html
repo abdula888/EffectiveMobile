@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .Song }} - Verse {{ .VerseNumber }}</title>
+    <title>{{ .SongName }} - Verse {{ .VerseNumber }}</title>
     <style>
         body {
             display: flex;
@@ -42,18 +42,18 @@
 
 <body>
     <div class="left-column">
-        <h1>{{ .Song }}</h1>
+        <h1>{{ .SongName }}</h1>
         <h2>By {{ .GroupName }}</h2>
         <p>Released: {{ .ReleaseDate }}</p>
         <p>Link on Youtube: <a href="{{ .Link }}" target="_blank">{{ .Link }}</a></p>
 
         <div>
             {{ if .HasPrev }}
-            <a href="/groups/{{ .GroupName }}/songs/{{ .Song }}?verse={{ .PrevVerse }}">Previous Verse</a>
+            <a href="/groups/{{ .GroupName }}/songs/{{ .SongName }}?verse={{ .PrevVerse }}">Previous Verse</a>
             {{ end }}
 
             {{ if .HasNext }}
-            <a href="/groups/{{ .GroupName }}/songs/{{ .Song }}?verse={{ .NextVerse }}">Next Verse</a>
+            <a href="/groups/{{ .GroupName }}/songs/{{ .SongName }}?verse={{ .NextVerse }}">Next Verse</a>
             {{ end }}
         </div>
         
@@ -94,8 +94,8 @@
             // Получаем значения из полей ввода
 
             const songData = {
-                "group": "{{ .GroupName }}",
-                "song": "{{ .Song }}",
+                "group_name": "{{ .GroupName }}",
+                "song_name": "{{ .SongName }}",
                 "text": document.getElementById('verseText').value,
                 "releaseDate": document.getElementById('releaseDate').value,
                 "link": document.getElementById('youtubeLink').value
@@ -118,7 +118,7 @@
             .then(data => {
                 console.log('Success:', data);
                 alert('Song updated successfully!');
-                window.location.href = '/groups/{{ .GroupName }}/songs/{{ .Song }}?verse=1'; // Обновляем страницу
+                window.location.href = '/groups/{{ .GroupName }}/songs/{{ .SongName }}?verse=1'; // Обновляем страницу
             })
             .catch(error => {
                 console.error('Error:', error);

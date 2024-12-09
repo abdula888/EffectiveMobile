@@ -20,7 +20,7 @@ func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *
 	})
 
 	r.POST("/songs/add_song/", func(c *gin.Context) {
-		handlers.AddSong(c)
+		handlers.AddSongHandler(c)
 	})
 
 	r.GET("/songs/delete_song/", func(c *gin.Context) {
@@ -32,19 +32,19 @@ func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *
 	})
 
 	r.DELETE("/songs/delete_song/", func(c *gin.Context) {
-		handlers.DeleteSong(c)
+		handlers.DeleteSongHandler(c)
 	})
 
 	r.GET("/groups/:groupName/songs/:songName", func(c *gin.Context) {
-		handlers.RenderSongText(c)
+		handlers.RenderSongTextHandler(c)
 	})
 
 	r.GET("/songs/", func(c *gin.Context) {
-		handlers.RenderSongsList(c, tmplSongs)
+		handlers.RenderSongsListHandler(c, tmplSongs)
 	})
 
 	r.PUT("/songs/", func(c *gin.Context) {
-		handlers.UpdateSong(c)
+		handlers.UpdateSongHandler(c)
 	})
 	return r
 }

@@ -6,7 +6,6 @@ import (
 	"EffectiveMobile/internal/repository"
 	"EffectiveMobile/pkg/api"
 	"EffectiveMobile/pkg/log"
-	"database/sql"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -38,7 +37,7 @@ type Media struct {
 	URL      string `json:"url"`
 }
 
-func RenderSongsList(c *gin.Context, tmpl *template.Template) {
+func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
 	r, w := c.Request, c.Writer
 
 	// Получаем параметры фильтра
@@ -71,10 +70,9 @@ func RenderSongsList(c *gin.Context, tmpl *template.Template) {
 		return
 	}
 	log.Logger.Debug("Successfully connected to the database")
-	defer db.Close()
 
 	// Получаем песни с учётом лимита и смещения
-	songs, err := repository.GetSongsWithPagination(db, songsPerPage, offset, group, song, releaseDate)
+	songs, err := repository.GetSongsList(db, songsPerPage, offset, group, song, releaseDate)
 	if err != nil {
 		log.Logger.Error("Error fetching songs from database:", err)
 		http.Error(w, "Error loading songs", http.StatusInternalServerError)
@@ -111,7 +109,7 @@ func RenderSongsList(c *gin.Context, tmpl *template.Template) {
 }
 
 // RenderSongText отображает полный текст песни
-func RenderSongText(c *gin.Context) {
+func RenderSongTextHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	groupName := c.Param("groupName")
 	songName := c.Param("songName")
@@ -125,10 +123,9 @@ func RenderSongText(c *gin.Context) {
 		return
 	}
 	log.Logger.Debug("Successfully connected to the database")
-	defer db.Close()
 
 	// Получаем песню через репозиторий
-	song, err := repository.GetSongByName(db, groupName, songName)
+	song, err := repository.GetSongText(db, groupName, songName)
 	if err != nil {
 		log.Logger.Warnf("Song not found: Group=%s, Song=%s", groupName, songName)
 		http.Error(w, "Song not found", http.StatusNotFound)
@@ -166,7 +163,7 @@ func RenderSongText(c *gin.Context) {
 	// Подготовка данных для шаблона
 	data := struct {
 		GroupName   string
-		Song        string
+		SongName    string
 		Text        string
 		ReleaseDate string
 		Link        string
@@ -178,7 +175,7 @@ func RenderSongText(c *gin.Context) {
 		NextVerse   int
 	}{
 		GroupName:   song.GroupName,
-		Song:        song.Song,
+		SongName:    song.SongName,
 		Text:        song.Text,
 		ReleaseDate: song.ReleaseDate,
 		Link:        song.Link,
@@ -209,17 +206,19 @@ func RenderSongText(c *gin.Context) {
 	log.Logger.Infof("Template rendered successfully for song %s - %s, verse %d", groupName, songName, verseNumber)
 }
 
-func UpdateSong(c *gin.Context) {
+func UpdateSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
-	var song models.Song
-	err := json.NewDecoder(r.Body).Decode(&song)
+	var songJSON models.SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	log.Logger.Debugf("Decoded song: %+v", song)
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
 
+	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName,
+		Text: songJSON.Text, ReleaseDate: songJSON.ReleaseDate, Link: songJSON.Link}
 	db, err := config.InitDB()
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
@@ -227,9 +226,8 @@ func UpdateSong(c *gin.Context) {
 		return
 	}
 	log.Logger.Debug("Successfully connected to the database")
-	defer db.Close()
 
-	err = repository.UpdateSongByName(db, song)
+	err = repository.UpdateSong(db, song)
 	if err != nil {
 		log.Logger.Error("Error updating song in database:", err)
 		http.Error(w, "Error updating song", http.StatusInternalServerError)
@@ -243,38 +241,38 @@ func UpdateSong(c *gin.Context) {
 }
 
 // Основная функция добавления песни
-func AddSong(c *gin.Context) {
+func AddSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
-	var song models.Song
-	err := json.NewDecoder(r.Body).Decode(&song)
+	var songJSON models.SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	log.Logger.Debugf("Decoded song: %+v", song)
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
 
-	if song.GroupName == "" || song.Song == "" {
+	if songJSON.GroupName == "" || songJSON.SongName == "" {
 		log.Logger.Warn("GroupName or Song fields are empty")
 		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
 		return
 	}
-
-	audDData, err := api.GetAudDData(song.GroupName, song.Song)
+	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
+	audDData, err := api.GetAudDData(song.GroupName, song.SongName)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from AudD: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
 		return
 	}
-	log.Logger.Debugf("AudD data retrieved: %+v", audDData)
+	log.Logger.Debugf("AudD data retrieved")
 
-	lastFmData, err := api.GetLastFmData(song.GroupName, song.Song)
+	lastFmData, err := api.GetLastFmData(song.GroupName, song.SongName)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from Last.fm: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
 		return
 	}
-	log.Logger.Debugf("Last.fm data retrieved: %+v", lastFmData)
+	log.Logger.Debugf("Last.fm data retrieved")
 
 	if lastFmData.Track.Wiki.Published != "" {
 		song.ReleaseDate, err = parseReleaseDate(lastFmData.Track.Wiki.Published)
@@ -290,7 +288,7 @@ func AddSong(c *gin.Context) {
 	}
 
 	song.Text = audDData.Result[0].Lyrics
-	log.Logger.Debugf("Fetched song lyrics: %s", song.Text)
+	log.Logger.Debugf("Fetched song lyrics")
 
 	var media []Media
 	err = json.Unmarshal([]byte(audDData.Result[0].Media), &media)
@@ -320,58 +318,38 @@ func AddSong(c *gin.Context) {
 		return
 	}
 	log.Logger.Debug("Successfully connected to the database")
-	defer db.Close()
 
-	var groupID int
-	queryCheckGroup := `SELECT group_id FROM groups WHERE group_name = $1`
-	err = db.QueryRow(queryCheckGroup, song.GroupName).Scan(&groupID)
-	if err == sql.ErrNoRows {
-		queryInsertGroup := `INSERT INTO groups (group_name) VALUES ($1) RETURNING group_id`
-		err = db.QueryRow(queryInsertGroup, song.GroupName).Scan(&groupID)
-		if err != nil {
-			log.Logger.Error("Error inserting group into database: ", err)
-			http.Error(w, "Error saving song", http.StatusInternalServerError)
-			return
-		}
-		log.Logger.Infof("Group inserted into database: %s (ID: %d)", song.GroupName, groupID)
-	} else if err != nil {
-		log.Logger.Error("Error checking group in database: ", err)
-		http.Error(w, "Error saving song", http.StatusInternalServerError)
-		return
-	} else {
-		log.Logger.Debugf("Group exists in database: %s (ID: %d)", song.GroupName, groupID)
-	}
-
-	queryInsertSong := `INSERT INTO songs (group_id, song_name, text, releaseDate, link) VALUES ($1, $2, $3, $4, $5)`
-	_, err = db.Exec(queryInsertSong, groupID, song.Song, song.Text, song.ReleaseDate, song.Link)
+	err = repository.AddSong(db, song)
 	if err != nil {
-		log.Logger.Error("Error inserting song into database: ", err)
-		http.Error(w, "Error saving song", http.StatusInternalServerError)
+		log.Logger.Warnf("Error adding song: %s", err)
+		http.Error(w, "Error adding song", http.StatusNotFound)
 		return
 	}
-	log.Logger.Infof("Song inserted into database: %s - %s", song.GroupName, song.Song)
+
+	log.Logger.Infof("Song inserted into database: %s - %s", song.GroupName, song.SongName)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(Response{Message: "Song added successfully"})
 }
 
-func DeleteSong(c *gin.Context) {
+func DeleteSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
-	var song models.Song
-	err := json.NewDecoder(r.Body).Decode(&song)
+	var songJSON models.SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	log.Logger.Debugf("Decoded song for deletion: %+v", song)
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
 
-	if song.GroupName == "" || song.Song == "" {
+	if songJSON.GroupName == "" || songJSON.SongName == "" {
 		log.Logger.Warn("GroupName or Song fields are empty")
 		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
 		return
 	}
+	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
 
 	db, err := config.InitDB()
 	if err != nil {
@@ -380,44 +358,15 @@ func DeleteSong(c *gin.Context) {
 		return
 	}
 	log.Logger.Debug("Successfully connected to the database")
-	defer db.Close()
 
-	var exists bool
-	query := `
-    SELECT EXISTS (
-        SELECT 1 
-        FROM songs 
-        WHERE group_id = (SELECT group_id FROM groups WHERE group_name = $1) 
-          AND song_name = $2
-    )
-`
-	err = db.QueryRow(query, song.GroupName, song.Song).Scan(&exists)
+	err = repository.DeleteSong(db, song.SongName, song.GroupName)
 	if err != nil {
-		log.Logger.Error("Error checking if song exists: ", err)
-		http.Error(w, "Error checking song", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debugf("Song existence check: Group=%s, Song=%s, Exists=%t", song.GroupName, song.Song, exists)
-
-	if !exists {
-		log.Logger.Warnf("Song not found for deletion: Group=%s, Song=%s", song.GroupName, song.Song)
-		http.Error(w, "Song not found", http.StatusNotFound)
+		log.Logger.Warnf("Error delete song: %s", err)
+		http.Error(w, "Error delete song", http.StatusNotFound)
 		return
 	}
 
-	query = `
-	DELETE 
-	FROM songs 
-	WHERE group_id = (SELECT group_id FROM groups WHERE group_name = $1 LIMIT 1)
-	  AND song_name=$2
-	`
-	_, err = db.Exec(query, song.GroupName, song.Song)
-	if err != nil {
-		log.Logger.Error("Error executing delete query: ", err)
-		http.Error(w, "Error deleting song", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Infof("Song deleted successfully: Group=%s, Song=%s", song.GroupName, song.Song)
+	log.Logger.Infof("Song deleted successfully: Group=%s, Song=%s", song.GroupName, song.SongName)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -33,7 +33,6 @@ func main() {
 		log.Logger.Fatal("Failed to connect to the database:", err)
 	}
 	log.Logger.Info("Successfully connected to the database")
-	defer db.Close()
 
 	// Применение миграций
 	if err := migrations.RunMigrations(db); err != nil {
