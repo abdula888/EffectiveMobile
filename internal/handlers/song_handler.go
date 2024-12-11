@@ -6,6 +6,7 @@ import (
 	"EffectiveMobile/internal/repository"
 	"EffectiveMobile/pkg/api"
 	"EffectiveMobile/pkg/log"
+	"EffectiveMobile/web/templates"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -205,12 +206,7 @@ func RenderSongTextHandler(c *gin.Context) {
 	}
 
 	// Парсим шаблон для отображения куплета
-	tmpl, err := template.ParseFiles("internal/templates/song_text.html")
-	if err != nil {
-		log.Logger.Error("Error loading template:", err)
-		http.Error(w, "Error loading template", http.StatusInternalServerError)
-		return
-	}
+	tmpl := templates.ParseTemplate("song_text.html")
 	log.Logger.Debug("Template loaded successfully")
 
 	// Отображаем шаблон

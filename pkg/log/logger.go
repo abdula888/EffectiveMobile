@@ -3,16 +3,12 @@ package log
 import (
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
 var Logger *logrus.Logger
 
 func init() {
-	// Загружаем .env файл (если он существует)
-	_ = godotenv.Load()
-
 	// Создаем новый экземпляр логгера
 	Logger = logrus.New()
 

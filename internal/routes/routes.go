@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"net/http"
 
-	_ "EffectiveMobile/docs"
+	_ "EffectiveMobile/api/swagger"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
