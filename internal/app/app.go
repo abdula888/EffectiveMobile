@@ -6,7 +6,6 @@ import (
 	"EffectiveMobile/migrations"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
-	"EffectiveMobile/web/templates"
 )
 
 func Run(conf *config.Config) {
@@ -23,13 +22,8 @@ func Run(conf *config.Config) {
 	}
 	log.Logger.Info("Migrations applied successfully")
 
-	tmplAddSong := templates.ParseTemplate("add_song.html")
-	tmplSongs := templates.ParseTemplateWithFuncs("songs.html")
-	tmplDeleteSong := templates.ParseTemplate("delete_song.html")
-	log.Logger.Info("Templates parsed successfully")
-
 	// Регистрация маршрутов
-	r := routes.RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong, conf)
+	r := routes.RegisterRoutes(conf)
 	log.Logger.Info("Routes registered successfully")
 
 	// Запуск сервера

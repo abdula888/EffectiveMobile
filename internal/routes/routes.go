@@ -3,8 +3,6 @@ package routes
 import (
 	"EffectiveMobile/internal/config"
 	"EffectiveMobile/internal/handlers"
-	"html/template"
-	"net/http"
 
 	_ "EffectiveMobile/api/swagger"
 
@@ -13,32 +11,25 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template, conf *config.Config) *gin.Engine {
+func RegisterRoutes(conf *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	r.GET("/songs/add_song/", func(c *gin.Context) {
-		err := tmplAddSong.Execute(c.Writer, nil) // Отображаем HTML-страницу
-		if err != nil {
-			http.Error(c.Writer, "Error rendering template", http.StatusInternalServerError)
-			return
-		}
+	// Filter - "songs/?group=Eminem&song=&releaseDate=&page="
+	r.GET("/songs/", func(c *gin.Context) {
+		handlers.RenderSongsListHandler(c)
 	})
 
-	r.POST("/songs/add_song/", func(c *gin.Context) {
+	r.POST("/songs/", func(c *gin.Context) {
 		handlers.AddSongHandler(c, conf)
 	})
 
-	r.GET("/songs/delete_song/", func(c *gin.Context) {
-		err := tmplDeleteSong.Execute(c.Writer, nil) // Отображаем HTML-страницу
-		if err != nil {
-			http.Error(c.Writer, "Error rendering template", http.StatusInternalServerError)
-			return
-		}
+	r.PUT("/songs/", func(c *gin.Context) {
+		handlers.UpdateSongHandler(c)
 	})
 
-	r.DELETE("/songs/delete_song/", func(c *gin.Context) {
+	r.DELETE("/songs/", func(c *gin.Context) {
 		handlers.DeleteSongHandler(c)
 	})
 
@@ -46,12 +37,5 @@ func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template, c
 		handlers.RenderSongTextHandler(c)
 	})
 
-	r.GET("/songs/", func(c *gin.Context) {
-		handlers.RenderSongsListHandler(c, tmplSongs)
-	})
-
-	r.PUT("/songs/", func(c *gin.Context) {
-		handlers.UpdateSongHandler(c)
-	})
 	return r
 }

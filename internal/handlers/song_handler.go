@@ -7,9 +7,7 @@ import (
 	"EffectiveMobile/pkg/api"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
-	"EffectiveMobile/web/templates"
 	"encoding/json"
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,6 +37,13 @@ type Media struct {
 	URL      string `json:"url"`
 }
 
+type DataJSON struct {
+	GroupName   string `json:"group_name"`
+	SongName    string `json:"song_name"`
+	ReleaseDate string `json:"releaseDate"`
+	Link        string `json:"link"`
+}
+
 // @Summary RenderSongsListHandler
 // @Tags songs
 // @Description display list of songs
@@ -48,7 +53,7 @@ type Media struct {
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
 // @Router /songs/ [get]
-func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
+func RenderSongsListHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
 
 	// Получаем параметры фильтра
@@ -91,32 +96,13 @@ func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
 	}
 	log.Logger.Infof("Fetched %d songs for page %d", len(songs), pageNumber)
 
-	// Передаём список песен в шаблон
-	data := struct {
-		Songs             []models.Song
-		CurrentPage       int
-		HasPrevPage       bool
-		HasNextPage       bool
-		FilterGroup       string
-		FilterSong        string
-		FilterReleaseDate string
-	}{
-		Songs:             songs,
-		CurrentPage:       pageNumber,
-		HasPrevPage:       pageNumber > 1,
-		HasNextPage:       len(songs) == songsPerPage,
-		FilterGroup:       group,
-		FilterSong:        song,
-		FilterReleaseDate: releaseDate,
+	songsListJSON := make([]DataJSON, len(songs))
+	for i, elem := range songs {
+		songsListJSON[i] = DataJSON{GroupName: elem.GroupName, SongName: elem.SongName, ReleaseDate: elem.ReleaseDate, Link: elem.Link}
 	}
 
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		log.Logger.Error("Error rendering template:", err)
-		http.Error(w, "Error rendering template", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Info("Template rendered successfully")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(songsListJSON)
 }
 
 // @Summary RenderSongTextHandler
@@ -175,49 +161,27 @@ func RenderSongTextHandler(c *gin.Context) {
 	// Текущий куплет
 	currentVerse := verses[verseNumber-1]
 
-	// Проверка наличия предыдущего и следующего куплета
-	hasPrev := verseNumber > 1
-	hasNext := verseNumber < len(verses)
-
 	// Подготовка данных для шаблона
 	data := struct {
 		GroupName   string
 		SongName    string
-		Text        string
+		VerseNumber int
+		Verse       string
 		ReleaseDate string
 		Link        string
-		Verse       string
-		VerseNumber int
-		HasPrev     bool
-		HasNext     bool
-		PrevVerse   int
-		NextVerse   int
+		FullText    string
 	}{
 		GroupName:   song.GroupName,
 		SongName:    song.SongName,
-		Text:        song.Text,
+		VerseNumber: verseNumber,
+		Verse:       currentVerse,
 		ReleaseDate: song.ReleaseDate,
 		Link:        song.Link,
-		Verse:       currentVerse,
-		VerseNumber: verseNumber,
-		HasPrev:     hasPrev,
-		HasNext:     hasNext,
-		PrevVerse:   verseNumber - 1,
-		NextVerse:   verseNumber + 1,
+		FullText:    song.Text,
 	}
 
-	// Парсим шаблон для отображения куплета
-	tmpl := templates.ParseTemplate("song_text.html")
-	log.Logger.Debug("Template loaded successfully")
-
-	// Отображаем шаблон
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		log.Logger.Error("Error rendering template:", err)
-		http.Error(w, "Error rendering template", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Infof("Template rendered successfully for song %s - %s, verse %d", groupName, songName, verseNumber)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
 }
 
 // @Summary UpdateSongHandler
