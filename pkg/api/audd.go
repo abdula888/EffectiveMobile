@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 // Структура для ответа от AudD API
@@ -20,11 +19,9 @@ type AudDResponse struct {
 }
 
 // Функция для обращения к AudD API
-func GetAudDData(artist string, track string) (AudDResponse, error) {
-	apiKey := os.Getenv("AUDD_API_KEY")
-	apiURL := os.Getenv("AUDD_API_URL")
+func GetAudDData(artist, track, apiKey, apiURL string) (AudDResponse, error) {
 	fullURL := fmt.Sprintf("%s?q=%s+%s&api_token=%s", apiURL, url.QueryEscape(artist), url.QueryEscape(track), apiKey)
-
+	fmt.Println(fullURL)
 	resp, err := http.Get(fullURL)
 	if err != nil {
 		return AudDResponse{}, fmt.Errorf("error making API request: %v", err)

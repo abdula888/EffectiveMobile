@@ -1,19 +1,43 @@
 package config
 
 import (
-	_ "github.com/lib/pq" // Подключение к Postgres
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
-// Функция для инициализации подключения к базе данных
-func InitDB() (*gorm.DB, error) {
-	databaseURL := "host=localhost user=test_user dbname=test_db password=password sslmode=disable" // для go run
-	//databaseURL := os.Getenv("DATABASE_URL") // URL базы данных из .env для Docker
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+type (
+	Config struct {
+		DatabaseURL string
+		LogLevel    string
+		AuddAPI
+		LastFMAPI
+	}
+
+	AuddAPI struct {
+		AuddAPIKey string
+		AuddAPIURL string
+	}
+
+	LastFMAPI struct {
+		LastFMAPIKey string
+		LastFMAPIURL string
+	}
+)
+
+func NewConfig() (*Config, error) {
+	err := godotenv.Load("../../configs/.env")
+
+	databaseURL := os.Getenv("DATABASE_URL")
+	logLevel := os.Getenv("LOG_LEVEL")
+	auddAPI := AuddAPI{os.Getenv("AUDD_API_KEY"), os.Getenv("AUDD_API_URL")}
+	lastFMAPI := LastFMAPI{os.Getenv("LASTFM_API_KEY"), os.Getenv("LASTFM_API_URL")}
+
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	conf := &Config{DatabaseURL: databaseURL, LogLevel: logLevel, AuddAPI: auddAPI, LastFMAPI: lastFMAPI}
+
+	return conf, nil
 }

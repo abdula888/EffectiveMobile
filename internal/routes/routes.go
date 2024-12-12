@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"EffectiveMobile/internal/config"
 	"EffectiveMobile/internal/handlers"
 	"html/template"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *gin.Engine {
+func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template, conf *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -26,7 +27,7 @@ func RegisterRoutes(tmplAddSong, tmplSongs, tmplDeleteSong *template.Template) *
 	})
 
 	r.POST("/songs/add_song/", func(c *gin.Context) {
-		handlers.AddSongHandler(c)
+		handlers.AddSongHandler(c, conf)
 	})
 
 	r.GET("/songs/delete_song/", func(c *gin.Context) {

@@ -1,19 +1,15 @@
 package log
 
 import (
-	"os"
-
 	"github.com/sirupsen/logrus"
 )
 
 var Logger *logrus.Logger
 
-func init() {
+func SetUpLogger(logLevel string) {
 	// Создаем новый экземпляр логгера
 	Logger = logrus.New()
 
-	// Читаем уровень логирования из переменных окружения
-	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = "info"
 	}

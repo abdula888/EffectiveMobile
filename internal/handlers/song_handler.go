@@ -5,6 +5,7 @@ import (
 	"EffectiveMobile/internal/models"
 	"EffectiveMobile/internal/repository"
 	"EffectiveMobile/pkg/api"
+	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
 	"EffectiveMobile/web/templates"
 	"encoding/json"
@@ -73,7 +74,7 @@ func RenderSongsListHandler(c *gin.Context, tmpl *template.Template) {
 	songsPerPage := 20
 	offset := (pageNumber - 1) * songsPerPage
 
-	db, err := config.InitDB()
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -134,7 +135,7 @@ func RenderSongTextHandler(c *gin.Context) {
 	log.Logger.Debugf("Group: %s, Song: %s", groupName, songName)
 
 	// Подключаемся к базе данных
-	db, err := config.InitDB()
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -240,7 +241,7 @@ func UpdateSongHandler(c *gin.Context) {
 
 	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName,
 		Text: songJSON.Text, ReleaseDate: songJSON.ReleaseDate, Link: songJSON.Link}
-	db, err := config.InitDB()
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -270,7 +271,7 @@ func UpdateSongHandler(c *gin.Context) {
 // @Failure      404  {object}  error
 // @Failure      500  {object} error
 // @Router /songs/add_song/ [post]
-func AddSongHandler(c *gin.Context) {
+func AddSongHandler(c *gin.Context, conf *config.Config) {
 	r, w := c.Request, c.Writer
 	var songJSON models.SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)
@@ -287,7 +288,7 @@ func AddSongHandler(c *gin.Context) {
 		return
 	}
 	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
-	audDData, err := api.GetAudDData(song.GroupName, song.SongName)
+	audDData, err := api.GetAudDData(song.GroupName, song.SongName, conf.AuddAPI.AuddAPIKey, conf.AuddAPI.AuddAPIURL)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from AudD: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
@@ -295,7 +296,7 @@ func AddSongHandler(c *gin.Context) {
 	}
 	log.Logger.Debugf("AudD data retrieved")
 
-	lastFmData, err := api.GetLastFmData(song.GroupName, song.SongName)
+	lastFmData, err := api.GetLastFmData(song.GroupName, song.SongName, conf.LastFMAPI.LastFMAPIKey, conf.LastFMAPI.LastFMAPIURL)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from Last.fm: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
@@ -340,7 +341,7 @@ func AddSongHandler(c *gin.Context) {
 		log.Logger.Debugf("YouTube link found: %s", song.Link)
 	}
 
-	db, err := config.InitDB()
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -389,7 +390,7 @@ func DeleteSongHandler(c *gin.Context) {
 	}
 	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
 
-	db, err := config.InitDB()
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
 		log.Logger.Error("Failed to connect to the database:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

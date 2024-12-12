@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 // Структура для ответа от Last.fm API
@@ -26,9 +25,7 @@ type LastFmResponse struct {
 }
 
 // Функция для обращения к Last.fm API
-func GetLastFmData(artist string, track string) (LastFmResponse, error) {
-	apiKey := os.Getenv("LASTFM_API_KEY")
-	apiURL := os.Getenv("LASTFM_API_URL")
+func GetLastFmData(artist, track, apiKey, apiURL string) (LastFmResponse, error) {
 	fullURL := fmt.Sprintf("%s&api_key=%s&artist=%s&track=%s&format=json", apiURL, apiKey, url.QueryEscape(artist), url.QueryEscape(track))
 
 	resp, err := http.Get(fullURL)
