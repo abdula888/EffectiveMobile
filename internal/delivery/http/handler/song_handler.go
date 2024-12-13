@@ -2,9 +2,10 @@ package handler
 
 import (
 	"EffectiveMobile/internal/config"
-	"EffectiveMobile/internal/models"
-	"EffectiveMobile/internal/repository"
-	"EffectiveMobile/pkg/api"
+	"EffectiveMobile/internal/infrastructure/postgres/model"
+	"EffectiveMobile/internal/infrastructure/postgres/repository"
+	"EffectiveMobile/pkg/api/audd"
+	"EffectiveMobile/pkg/api/lastfm"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
 	"encoding/json"
@@ -16,39 +17,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Функция для парсинга даты в формат Go
-func parseReleaseDate(dateStr string) (string, error) {
-	// Пример: "02 Jan 2006, 15:04"
-	parsedDate, err := time.Parse("02 Jan 2006, 15:04", dateStr)
-	if err != nil {
-		return "", err
-	}
-	return parsedDate.Format("2006-01-02"), nil // Возвращаем в формате YYYY-MM-DD
-}
-
-type Response struct {
-	Message string `json:"message"`
-}
-
-// Структура для получения ссылки из ответа AudD API
-type Media struct {
-	Provider string `json:"provider"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-}
-
-type DataJSON struct {
-	GroupName   string `json:"group_name"`
-	SongName    string `json:"song_name"`
-	ReleaseDate string `json:"releaseDate"`
-	Link        string `json:"link"`
-}
-
 // @Summary RenderSongsListHandler
 // @Tags songs
 // @Description display list of songs
 // @Produce      json
-// @Success      200  {object}  []models.Song
+// @Success      200  {object}  []model.Song
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
@@ -109,7 +82,7 @@ func RenderSongsListHandler(c *gin.Context) {
 // @Tags song
 // @Description display song's info
 // @Produce      json
-// @Success      200  {object}  models.Song
+// @Success      200  {object}  model.Song
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
@@ -167,7 +140,7 @@ func RenderSongTextHandler(c *gin.Context) {
 		SongName    string
 		VerseNumber int
 		Verse       string
-		ReleaseDate string
+		ReleaseDate time.Time
 		Link        string
 		FullText    string
 	}{
@@ -188,7 +161,7 @@ func RenderSongTextHandler(c *gin.Context) {
 // @Tags songs
 // @Description update song
 // @Accept      json
-// @Success      200  {object}  models.Song
+// @Success      200  {object}  model.Song
 // @Failure      400  {object}  error
 // @Failure      500  {object}  error
 // @Router /songs/ [put]
@@ -203,7 +176,7 @@ func UpdateSongHandler(c *gin.Context) {
 	}
 	log.Logger.Debugf("Decoded song: %+v", songJSON)
 
-	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName,
+	song := model.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName,
 		Text: songJSON.Text, ReleaseDate: songJSON.ReleaseDate, Link: songJSON.Link}
 	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {
@@ -230,7 +203,7 @@ func UpdateSongHandler(c *gin.Context) {
 // @Tags add_song
 // @Description add song
 // @Accept      json
-// @Success      201  {object}  models.Song
+// @Success      201  {object}  model.Song
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object} error
@@ -251,8 +224,8 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
 		return
 	}
-	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
-	audDData, err := api.GetAudDData(song.GroupName, song.SongName, conf.AuddAPI.AuddAPIKey, conf.AuddAPI.AuddAPIURL)
+	song := model.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
+	audDData, err := audd.GetAudDData(song.GroupName, song.SongName, conf.AuddAPI.AuddAPIKey, conf.AuddAPI.AuddAPIURL)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from AudD: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
@@ -260,7 +233,7 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 	}
 	log.Logger.Debugf("AudD data retrieved")
 
-	lastFmData, err := api.GetLastFmData(song.GroupName, song.SongName, conf.LastFMAPI.LastFMAPIKey, conf.LastFMAPI.LastFMAPIURL)
+	lastFmData, err := lastfm.GetLastFmData(song.GroupName, song.SongName, conf.LastFMAPI.LastFMAPIKey, conf.LastFMAPI.LastFMAPIURL)
 	if err != nil {
 		log.Logger.Error("Error fetching song data from Last.fm: ", err)
 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
@@ -269,7 +242,7 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 	log.Logger.Debugf("Last.fm data retrieved")
 
 	if lastFmData.Track.Wiki.Published != "" {
-		song.ReleaseDate, err = parseReleaseDate(lastFmData.Track.Wiki.Published)
+		song.ReleaseDate, err = time.Parse("02 Jan 2006, 15:04", lastFmData.Track.Wiki.Published)
 		if err != nil {
 			log.Logger.Error("Error parsing release date: ", err)
 			http.Error(w, "Error parsing release date", http.StatusInternalServerError)
@@ -278,13 +251,13 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 		log.Logger.Debugf("Parsed release date: %s", song.ReleaseDate)
 	} else {
 		log.Logger.Info("No release date found in Last.fm API response")
-		song.ReleaseDate = ""
+		song.ReleaseDate = time.Time{}
 	}
 
 	song.Text = audDData.Result[0].Lyrics
 	log.Logger.Debugf("Fetched song lyrics")
 
-	var media []Media
+	var media []audd.Media
 	err = json.Unmarshal([]byte(audDData.Result[0].Media), &media)
 	if err != nil {
 		log.Logger.Error("Error parsing media field: ", err)
@@ -324,14 +297,14 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(Response{Message: "Song added successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Song added successfully"})
 }
 
 // @Summary DeleteSongHandler
 // @Tags delete_song
 // @Description delete song
 // @Accept      json
-// @Success      200  {object}  models.Song
+// @Success      200  {object}  model.Song
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
@@ -352,7 +325,7 @@ func DeleteSongHandler(c *gin.Context) {
 		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
 		return
 	}
-	song := models.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
+	song := model.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
 
 	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
 	if err != nil {

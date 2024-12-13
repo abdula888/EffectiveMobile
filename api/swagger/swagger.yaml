@@ -1,6 +1,6 @@
 basePath: /songs/
 definitions:
-  models.Song:
+  model.Song:
     properties:
       groupID:
         type: integer
@@ -33,7 +33,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Song'
+            $ref: '#/definitions/model.Song'
         "400":
           description: Bad Request
           schema: {}
@@ -56,7 +56,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Song'
+              $ref: '#/definitions/model.Song'
             type: array
         "400":
           description: Bad Request
@@ -78,7 +78,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Song'
+            $ref: '#/definitions/model.Song'
         "400":
           description: Bad Request
           schema: {}
@@ -97,7 +97,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Song'
+            $ref: '#/definitions/model.Song'
         "400":
           description: Bad Request
           schema: {}
@@ -119,7 +119,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Song'
+            $ref: '#/definitions/model.Song'
         "400":
           description: Bad Request
           schema: {}

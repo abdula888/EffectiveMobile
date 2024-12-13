@@ -29,7 +29,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -63,7 +63,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Song"
+                                "$ref": "#/definitions/model.Song"
                             }
                         }
                     },
@@ -94,7 +94,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -122,7 +122,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -154,7 +154,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -174,7 +174,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.Song": {
+        "model.Song": {
             "type": "object",
             "properties": {
                 "groupID": {

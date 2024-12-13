@@ -1,15 +1,14 @@
 package repository
 
 import (
-	"EffectiveMobile/internal/models"
+	"EffectiveMobile/internal/infrastructure/postgres/model"
 	"errors"
-	"time"
 
 	"gorm.io/gorm"
 )
 
-func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDate string) ([]models.Song, error) {
-	var songs []models.Song
+func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDate string) ([]model.Song, error) {
+	var songs []model.Song
 	groupName, songName = "%"+groupName+"%", "%"+songName+"%"
 
 	rows, err := db.Table("songs s").Joins("join groups g on s.group_id = g.id").
@@ -21,24 +20,20 @@ func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDa
 	}
 
 	for rows.Next() {
-		var song models.Song
-		var releaseDate time.Time
+		var song model.Song
 
-		err := rows.Scan(&song.GroupName, &song.SongName, &song.Text, &releaseDate, &song.Link)
+		err := rows.Scan(&song.GroupName, &song.SongName, &song.Text, &song.ReleaseDate, &song.Link)
 		if err != nil {
 			return nil, err
 		}
-
-		// Преобразуем дату в формат 2006-01-02
-		song.ReleaseDate = releaseDate.Format("2006-01-02")
 
 		songs = append(songs, song)
 	}
 	return songs, nil
 }
 
-func GetSongText(db *gorm.DB, groupName string, songName string) (*models.Song, error) {
-	var song *models.Song
+func GetSongText(db *gorm.DB, groupName string, songName string) (*model.Song, error) {
+	var song *model.Song
 
 	db.Table("songs s").Joins("join groups g on s.group_id = g.id").
 		Where("s.song_name = ? AND g.group_name = ?", songName, groupName).Last(&song)
@@ -48,14 +43,14 @@ func GetSongText(db *gorm.DB, groupName string, songName string) (*models.Song, 
 	return song, nil
 }
 
-func UpdateSong(db *gorm.DB, song models.Song) error {
-	db.Model(&song).Where("group_id = ? AND song_name = ?", song.GroupID, song.SongName).Updates(models.Song{Text: song.Text, ReleaseDate: song.ReleaseDate, Link: song.Link})
+func UpdateSong(db *gorm.DB, song model.Song) error {
+	db.Model(&song).Where("group_id = ? AND song_name = ?", song.GroupID, song.SongName).Updates(model.Song{Text: song.Text, ReleaseDate: song.ReleaseDate, Link: song.Link})
 
 	return nil
 }
 
-func AddSong(db *gorm.DB, song models.Song) error {
-	group := &models.Group{GroupName: song.GroupName}
+func AddSong(db *gorm.DB, song model.Song) error {
+	group := &model.Group{GroupName: song.GroupName}
 	err := db.First(&group, "group_name = ?", group.GroupName).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		err = db.Create(&group).First(&group, "group_name = ?", group.GroupName).Error
@@ -72,12 +67,12 @@ func AddSong(db *gorm.DB, song models.Song) error {
 }
 
 func DeleteSong(db *gorm.DB, songName, groupName string) error {
-	var group models.Group
+	var group model.Group
 	err := db.First(&group, "group_name = ?", groupName).Error
 	if err != nil {
 		return err
 	}
-	err = db.Where("song_name = ? AND group_id = ?", songName, group.ID).Delete(&models.Song{}).Error
+	err = db.Where("song_name = ? AND group_id = ?", songName, group.ID).Delete(&model.Song{}).Error
 	if err != nil {
 		return err
 	}

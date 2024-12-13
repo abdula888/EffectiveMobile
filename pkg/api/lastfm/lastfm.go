@@ -1,4 +1,4 @@
-package api
+package lastfm
 
 import (
 	"encoding/json"

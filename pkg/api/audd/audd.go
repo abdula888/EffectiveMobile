@@ -1,4 +1,4 @@
-package api
+package audd
 
 import (
 	"encoding/json"
@@ -16,6 +16,13 @@ type AudDResponse struct {
 		Lyrics string `json:"lyrics"`
 		Media  string `json:"media"` // Временно используем строку для media
 	} `json:"result"`
+}
+
+// Структура для получения ссылки из ответа AudD API
+type Media struct {
+	Provider string `json:"provider"`
+	Type     string `json:"type"`
+	URL      string `json:"url"`
 }
 
 // Функция для обращения к AudD API

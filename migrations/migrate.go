@@ -1,7 +1,7 @@
 package migrations
 
 import (
-	"EffectiveMobile/internal/models"
+	"EffectiveMobile/internal/infrastructure/postgres/model"
 	"EffectiveMobile/pkg/log"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -10,7 +10,7 @@ import (
 )
 
 func RunMigrations(db *gorm.DB) error {
-	err := db.AutoMigrate(&models.Group{}, &models.Song{})
+	err := db.AutoMigrate(&model.Group{}, &model.Song{})
 	if err != nil {
 		return err
 	}

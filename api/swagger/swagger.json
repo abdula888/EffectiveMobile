@@ -23,7 +23,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -57,7 +57,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Song"
+                                "$ref": "#/definitions/model.Song"
                             }
                         }
                     },
@@ -88,7 +88,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -116,7 +116,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -148,7 +148,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Song"
+                            "$ref": "#/definitions/model.Song"
                         }
                     },
                     "400": {
@@ -168,7 +168,7 @@
         }
     },
     "definitions": {
-        "models.Song": {
+        "model.Song": {
             "type": "object",
             "properties": {
                 "groupID": {
