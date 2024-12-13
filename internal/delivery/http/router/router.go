@@ -1,8 +1,8 @@
-package routes
+package router
 
 import (
 	"EffectiveMobile/internal/config"
-	"EffectiveMobile/internal/handlers"
+	"EffectiveMobile/internal/delivery/http/handler"
 
 	_ "EffectiveMobile/api/swagger"
 
@@ -11,30 +11,30 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterRoutes(conf *config.Config) *gin.Engine {
+func NewRouter(conf *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	r.GET("/groups/:groupName/songs/:songName", func(c *gin.Context) {
+		handler.RenderSongTextHandler(c)
+	})
+
 	// Filter - "songs/?group=Eminem&song=&releaseDate=&page="
 	r.GET("/songs/", func(c *gin.Context) {
-		handlers.RenderSongsListHandler(c)
+		handler.RenderSongsListHandler(c)
 	})
 
 	r.POST("/songs/", func(c *gin.Context) {
-		handlers.AddSongHandler(c, conf)
+		handler.AddSongHandler(c, conf)
 	})
 
 	r.PUT("/songs/", func(c *gin.Context) {
-		handlers.UpdateSongHandler(c)
+		handler.UpdateSongHandler(c)
 	})
 
 	r.DELETE("/songs/", func(c *gin.Context) {
-		handlers.DeleteSongHandler(c)
-	})
-
-	r.GET("/groups/:groupName/songs/:songName", func(c *gin.Context) {
-		handlers.RenderSongTextHandler(c)
+		handler.DeleteSongHandler(c)
 	})
 
 	return r

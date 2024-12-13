@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"EffectiveMobile/internal/config"
@@ -194,7 +194,7 @@ func RenderSongTextHandler(c *gin.Context) {
 // @Router /songs/ [put]
 func UpdateSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
-	var songJSON models.SongJSON
+	var songJSON SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
@@ -237,7 +237,7 @@ func UpdateSongHandler(c *gin.Context) {
 // @Router /songs/add_song/ [post]
 func AddSongHandler(c *gin.Context, conf *config.Config) {
 	r, w := c.Request, c.Writer
-	var songJSON models.SongJSON
+	var songJSON SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
@@ -338,7 +338,7 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 // @Router /songs/delete_song/ [delete]
 func DeleteSongHandler(c *gin.Context) {
 	r, w := c.Request, c.Writer
-	var songJSON models.SongJSON
+	var songJSON SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)
 	if err != nil {
 		log.Logger.Warn("Error decoding JSON: ", err)
