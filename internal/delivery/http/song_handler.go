@@ -1,11 +1,8 @@
-package handler
+package http
 
 import (
-	"EffectiveMobile/internal/config"
 	"EffectiveMobile/internal/infrastructure/postgres/model"
 	"EffectiveMobile/internal/infrastructure/postgres/repository"
-	"EffectiveMobile/pkg/api/audd"
-	"EffectiveMobile/pkg/api/lastfm"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
 	"encoding/json"
@@ -17,67 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary RenderSongsListHandler
-// @Tags songs
-// @Description display list of songs
-// @Produce      json
-// @Success      200  {object}  []model.Song
-// @Failure      400  {object}  error
-// @Failure      404  {object}  error
-// @Failure      500  {object}  error
-// @Router /songs/ [get]
-func RenderSongsListHandler(c *gin.Context) {
-	r, w := c.Request, c.Writer
-
-	// Получаем параметры фильтра
-	group := r.URL.Query().Get("group")
-	song := r.URL.Query().Get("song")
-	releaseDate := r.URL.Query().Get("releaseDate")
-
-	// Получаем параметр страницы
-	page := r.URL.Query().Get("page")
-	if page == "" {
-		page = "1"
-	}
-
-	pageNumber, err := strconv.Atoi(page)
-	if err != nil || pageNumber < 1 {
-		pageNumber = 1
-	}
-
-	// Логируем параметры фильтра
-	log.Logger.Debugf("Filter parameters: group=%s, song=%s, releaseDate=%s, page=%s", group, song, releaseDate, page)
-
-	// Указываем количество песен на одной странице
-	songsPerPage := 20
-	offset := (pageNumber - 1) * songsPerPage
-
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
-	// Получаем песни с учётом лимита и смещения
-	songs, err := repository.GetSongsList(db, songsPerPage, offset, group, song, releaseDate)
-	if err != nil {
-		log.Logger.Error("Error fetching songs from database:", err)
-		http.Error(w, "Error loading songs", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Infof("Fetched %d songs for page %d", len(songs), pageNumber)
-
-	songsListJSON := make([]DataJSON, len(songs))
-	for i, elem := range songs {
-		songsListJSON[i] = DataJSON{GroupName: elem.GroupName, SongName: elem.SongName, ReleaseDate: elem.ReleaseDate, Link: elem.Link}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(songsListJSON)
-}
-
 // @Summary RenderSongTextHandler
 // @Tags song
 // @Description display song's info
@@ -87,7 +23,7 @@ func RenderSongsListHandler(c *gin.Context) {
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
 // @Router /groups/:groupName/songs/:songName [get]
-func RenderSongTextHandler(c *gin.Context) {
+func (h Handler) GetSongText(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	groupName := c.Param("groupName")
 	songName := c.Param("songName")
@@ -165,7 +101,7 @@ func RenderSongTextHandler(c *gin.Context) {
 // @Failure      400  {object}  error
 // @Failure      500  {object}  error
 // @Router /songs/ [put]
-func UpdateSongHandler(c *gin.Context) {
+func (h Handler) UpdateSong(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)
@@ -208,97 +144,97 @@ func UpdateSongHandler(c *gin.Context) {
 // @Failure      404  {object}  error
 // @Failure      500  {object} error
 // @Router /songs/add_song/ [post]
-func AddSongHandler(c *gin.Context, conf *config.Config) {
-	r, w := c.Request, c.Writer
-	var songJSON SongJSON
-	err := json.NewDecoder(r.Body).Decode(&songJSON)
-	if err != nil {
-		log.Logger.Warn("Error decoding JSON: ", err)
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-	log.Logger.Debugf("Decoded song: %+v", songJSON)
+// func (h Handler) AddSong(c *gin.Context) {
+// 	r, w := c.Request, c.Writer
+// 	var songJSON SongJSON
+// 	err := json.NewDecoder(r.Body).Decode(&songJSON)
+// 	if err != nil {
+// 		log.Logger.Warn("Error decoding JSON: ", err)
+// 		http.Error(w, "Invalid request", http.StatusBadRequest)
+// 		return
+// 	}
+// 	log.Logger.Debugf("Decoded song: %+v", songJSON)
 
-	if songJSON.GroupName == "" || songJSON.SongName == "" {
-		log.Logger.Warn("GroupName or Song fields are empty")
-		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
-		return
-	}
-	song := model.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
-	audDData, err := audd.GetAudDData(song.GroupName, song.SongName, conf.AuddAPI.AuddAPIKey, conf.AuddAPI.AuddAPIURL)
-	if err != nil {
-		log.Logger.Error("Error fetching song data from AudD: ", err)
-		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debugf("AudD data retrieved")
+// 	if songJSON.GroupName == "" || songJSON.SongName == "" {
+// 		log.Logger.Warn("GroupName or Song fields are empty")
+// 		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
+// 		return
+// 	}
+// 	song := model.Song{GroupName: songJSON.GroupName, SongName: songJSON.SongName}
+// 	audDData, err := audd.GetAudDData(song.GroupName, song.SongName, conf.AuddAPI.AuddAPIKey, conf.AuddAPI.AuddAPIURL)
+// 	if err != nil {
+// 		log.Logger.Error("Error fetching song data from AudD: ", err)
+// 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	log.Logger.Debugf("AudD data retrieved")
 
-	lastFmData, err := lastfm.GetLastFmData(song.GroupName, song.SongName, conf.LastFMAPI.LastFMAPIKey, conf.LastFMAPI.LastFMAPIURL)
-	if err != nil {
-		log.Logger.Error("Error fetching song data from Last.fm: ", err)
-		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debugf("Last.fm data retrieved")
+// 	lastFmData, err := lastfm.GetLastFmData(song.GroupName, song.SongName, conf.LastFMAPI.LastFMAPIKey, conf.LastFMAPI.LastFMAPIURL)
+// 	if err != nil {
+// 		log.Logger.Error("Error fetching song data from Last.fm: ", err)
+// 		http.Error(w, "Error fetching song data", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	log.Logger.Debugf("Last.fm data retrieved")
 
-	if lastFmData.Track.Wiki.Published != "" {
-		song.ReleaseDate, err = time.Parse("02 Jan 2006, 15:04", lastFmData.Track.Wiki.Published)
-		if err != nil {
-			log.Logger.Error("Error parsing release date: ", err)
-			http.Error(w, "Error parsing release date", http.StatusInternalServerError)
-			return
-		}
-		log.Logger.Debugf("Parsed release date: %s", song.ReleaseDate)
-	} else {
-		log.Logger.Info("No release date found in Last.fm API response")
-		song.ReleaseDate = time.Time{}
-	}
+// 	if lastFmData.Track.Wiki.Published != "" {
+// 		song.ReleaseDate, err = time.Parse("02 Jan 2006, 15:04", lastFmData.Track.Wiki.Published)
+// 		if err != nil {
+// 			log.Logger.Error("Error parsing release date: ", err)
+// 			http.Error(w, "Error parsing release date", http.StatusInternalServerError)
+// 			return
+// 		}
+// 		log.Logger.Debugf("Parsed release date: %s", song.ReleaseDate)
+// 	} else {
+// 		log.Logger.Info("No release date found in Last.fm API response")
+// 		song.ReleaseDate = time.Time{}
+// 	}
 
-	song.Text = audDData.Result[0].Lyrics
-	log.Logger.Debugf("Fetched song lyrics")
+// 	song.Text = audDData.Result[0].Lyrics
+// 	log.Logger.Debugf("Fetched song lyrics")
 
-	var media []audd.Media
-	err = json.Unmarshal([]byte(audDData.Result[0].Media), &media)
-	if err != nil {
-		log.Logger.Error("Error parsing media field: ", err)
-		http.Error(w, "Error parsing media field", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debugf("Parsed media field: %+v", media)
+// 	var media []audd.Media
+// 	err = json.Unmarshal([]byte(audDData.Result[0].Media), &media)
+// 	if err != nil {
+// 		log.Logger.Error("Error parsing media field: ", err)
+// 		http.Error(w, "Error parsing media field", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	log.Logger.Debugf("Parsed media field: %+v", media)
 
-	for _, m := range media {
-		if m.Provider == "youtube" {
-			song.Link = m.URL
-			break
-		}
-	}
-	if song.Link == "" {
-		log.Logger.Warn("YouTube link not found")
-	} else {
-		log.Logger.Debugf("YouTube link found: %s", song.Link)
-	}
+// 	for _, m := range media {
+// 		if m.Provider == "youtube" {
+// 			song.Link = m.URL
+// 			break
+// 		}
+// 	}
+// 	if song.Link == "" {
+// 		log.Logger.Warn("YouTube link not found")
+// 	} else {
+// 		log.Logger.Debugf("YouTube link found: %s", song.Link)
+// 	}
 
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	log.Logger.Debug("Successfully connected to the database")
+// 	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
+// 	if err != nil {
+// 		log.Logger.Error("Failed to connect to the database:", err)
+// 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	log.Logger.Debug("Successfully connected to the database")
 
-	err = repository.AddSong(db, song)
-	if err != nil {
-		log.Logger.Warnf("Error adding song: %s", err)
-		http.Error(w, "Error adding song", http.StatusNotFound)
-		return
-	}
+// 	err = repository.AddSong(db, song)
+// 	if err != nil {
+// 		log.Logger.Warnf("Error adding song: %s", err)
+// 		http.Error(w, "Error adding song", http.StatusNotFound)
+// 		return
+// 	}
 
-	log.Logger.Infof("Song inserted into database: %s - %s", song.GroupName, song.SongName)
+// 	log.Logger.Infof("Song inserted into database: %s - %s", song.GroupName, song.SongName)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Song added successfully"})
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusCreated)
+// 	json.NewEncoder(w).Encode(map[string]string{"message": "Song added successfully"})
+// }
 
 // @Summary DeleteSongHandler
 // @Tags delete_song
@@ -309,7 +245,7 @@ func AddSongHandler(c *gin.Context, conf *config.Config) {
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
 // @Router /songs/delete_song/ [delete]
-func DeleteSongHandler(c *gin.Context) {
+func (h Handler) DeleteSong(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON SongJSON
 	err := json.NewDecoder(r.Body).Decode(&songJSON)

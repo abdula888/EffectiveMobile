@@ -10,10 +10,13 @@ type (
 	Config struct {
 		DatabaseURL string
 		LogLevel    string
+		APIConfig
+	}
+
+	APIConfig struct {
 		AuddAPI
 		LastFMAPI
 	}
-
 	AuddAPI struct {
 		AuddAPIKey string
 		AuddAPIURL string
@@ -37,7 +40,7 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	conf := &Config{DatabaseURL: databaseURL, LogLevel: logLevel, AuddAPI: auddAPI, LastFMAPI: lastFMAPI}
+	conf := &Config{DatabaseURL: databaseURL, LogLevel: logLevel, APIConfig: APIConfig{AuddAPI: auddAPI, LastFMAPI: lastFMAPI}}
 
 	return conf, nil
 }

@@ -2,7 +2,9 @@ package app
 
 import (
 	"EffectiveMobile/internal/config"
-	"EffectiveMobile/internal/delivery/http/router"
+	"EffectiveMobile/internal/delivery/http"
+	"EffectiveMobile/internal/infrastructure/postgres/repository"
+	"EffectiveMobile/internal/usecase"
 	"EffectiveMobile/migrations"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
@@ -23,7 +25,10 @@ func Run(conf *config.Config) {
 	log.Logger.Info("Migrations applied successfully")
 
 	// Регистрация маршрутов
-	r := router.NewRouter(conf)
+	r := http.NewRouter(usecase.New(
+		repository.New(db),
+		conf.APIConfig,
+	))
 	log.Logger.Info("Routes registered successfully")
 
 	// Запуск сервера

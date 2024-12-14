@@ -1,4 +1,4 @@
-package handler
+package http
 
 import "time"
 
@@ -11,7 +11,7 @@ type SongJSON struct {
 	Link        string    `json:"link"`
 }
 
-type DataJSON struct {
+type SongsListJSON struct {
 	GroupName   string    `json:"group_name"`
 	SongName    string    `json:"song_name"`
 	ReleaseDate time.Time `json:"releaseDate"`

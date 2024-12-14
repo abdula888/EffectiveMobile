@@ -1,15 +1,26 @@
 package repository
 
 import (
+	"EffectiveMobile/internal/domain/entity"
 	"EffectiveMobile/internal/infrastructure/postgres/model"
 	"errors"
 
 	"gorm.io/gorm"
 )
 
-func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDate string) ([]model.Song, error) {
+type Repo struct {
+	db *gorm.DB
+}
+
+func New(db *gorm.DB) *Repo {
+	return &Repo{
+		db: db,
+	}
+}
+
+func (u *Repo) GetSongs(db *gorm.DB, limit, offset int, filter entity.SongsFilter) ([]model.Song, error) {
 	var songs []model.Song
-	groupName, songName = "%"+groupName+"%", "%"+songName+"%"
+	groupName, songName := "%"+filter.Group+"%", "%"+filter.Song+"%"
 
 	rows, err := db.Table("songs s").Joins("join groups g on s.group_id = g.id").
 		Select("g.group_name, s.song_name, s.text, s.release_date, s.link").Limit(limit).Offset(offset).
@@ -30,6 +41,22 @@ func GetSongsList(db *gorm.DB, limit, offset int, groupName, songName, releaseDa
 		songs = append(songs, song)
 	}
 	return songs, nil
+}
+
+func (u *Repo) GetSongText() {
+
+}
+
+func (u *Repo) AddSong() {
+
+}
+
+func (u *Repo) UpdateSong() {
+
+}
+
+func (u *Repo) DeleteSong() {
+
 }
 
 func GetSongText(db *gorm.DB, groupName string, songName string) (*model.Song, error) {

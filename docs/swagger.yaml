@@ -43,7 +43,7 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
-      summary: RenderSongTextHandler
+      summary: GetSongTextHandler
       tags:
       - song
   /songs/:
@@ -67,7 +67,7 @@ paths:
         "500":
           description: Internal Server Error
           schema: {}
-      summary: RenderSongsListHandler
+      summary: GetSongsHandler
       tags:
       - songs
     put:
