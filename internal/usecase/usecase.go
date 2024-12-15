@@ -6,22 +6,19 @@ import (
 	"EffectiveMobile/internal/infrastructure/postgres/model"
 	"EffectiveMobile/pkg/api/audd"
 	"EffectiveMobile/pkg/api/lastfm"
-	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
 	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type repository interface {
-	GetSongs(db *gorm.DB, limit, offset int, filter entity.SongsFilter) ([]model.Song, error)
-	GetSongText(db *gorm.DB, groupName, songName string) (model.Song, error)
-	AddSong(db *gorm.DB, song entity.Song) error
-	UpdateSong(db *gorm.DB, song entity.Song) error
-	DeleteSong(db *gorm.DB, groupName, songName string) error
+	GetSongs(limit, offset int, filter entity.SongsFilter) ([]model.Song, error)
+	GetSongText(groupName, songName string) (model.Song, error)
+	AddSong(song entity.Song) error
+	UpdateSong(song entity.Song) error
+	DeleteSong(groupName, songName string) error
 }
 
 type Usecase struct {
@@ -53,15 +50,8 @@ func (u *Usecase) GetSongs(filter entity.SongsFilter) ([]entity.SongsList, error
 	songsPerPage := 20
 	offset := (pageNumber - 1) * songsPerPage
 
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		return nil, err
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
 	// Получаем песни с учётом лимита и смещения
-	songs, err := u.repository.GetSongs(db, songsPerPage, offset, filter)
+	songs, err := u.repository.GetSongs(songsPerPage, offset, filter)
 	if err != nil {
 		log.Logger.Error("Error fetching songs from database:", err)
 		return nil, err
@@ -77,14 +67,7 @@ func (u *Usecase) GetSongs(filter entity.SongsFilter) ([]entity.SongsList, error
 }
 
 func (u *Usecase) GetSongText(groupName, songName, verse string) (entity.SongText, error) {
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		return entity.SongText{}, err
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
-	song, err := u.repository.GetSongText(db, groupName, songName)
+	song, err := u.repository.GetSongText(groupName, songName)
 	if err != nil {
 		log.Logger.Warnf("Song not found: Group=%s, Song=%s", groupName, songName)
 		return entity.SongText{}, err
@@ -168,14 +151,7 @@ func (u *Usecase) AddSong(groupName, songName string) error {
 		log.Logger.Debugf("YouTube link found: %s", song.Link)
 	}
 
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		return err
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
-	err = u.repository.AddSong(db, song)
+	err = u.repository.AddSong(song)
 	if err != nil {
 		log.Logger.Warnf("Error adding song: %s", err)
 		return err
@@ -186,14 +162,7 @@ func (u *Usecase) AddSong(groupName, songName string) error {
 }
 
 func (u *Usecase) UpdateSong(song entity.Song) error {
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		return err
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
-	err = u.repository.UpdateSong(db, song)
+	err := u.repository.UpdateSong(song)
 	if err != nil {
 		log.Logger.Error("Error updating song in database:", err)
 		return err
@@ -204,14 +173,7 @@ func (u *Usecase) UpdateSong(song entity.Song) error {
 }
 
 func (u *Usecase) DeleteSong(groupName, songName string) error {
-	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
-	if err != nil {
-		log.Logger.Error("Failed to connect to the database:", err)
-		return err
-	}
-	log.Logger.Debug("Successfully connected to the database")
-
-	err = u.repository.DeleteSong(db, groupName, songName)
+	err := u.repository.DeleteSong(groupName, songName)
 	if err != nil {
 		log.Logger.Warnf("Error delete song: %s", err)
 		return err
