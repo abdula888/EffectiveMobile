@@ -2,6 +2,7 @@ package http
 
 import (
 	"EffectiveMobile/internal/domain/entity"
+	"EffectiveMobile/pkg/log"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -13,10 +14,10 @@ import (
 
 type usecase interface {
 	GetSongs(filter entity.SongsFilter) ([]entity.SongsList, error)
-	GetSongText()
-	AddSong()
-	UpdateSong()
-	DeleteSong()
+	GetSongText(groupName, songName, verse string) (entity.SongText, error)
+	AddSong(groupName, songName string) error
+	UpdateSong(song entity.Song) error
+	DeleteSong(groupName, songName string) error
 }
 
 type Handler struct {
@@ -37,7 +38,7 @@ func NewRouter(usecase usecase) *gin.Engine {
 	// Filter - "songs/?group=Eminem&song=&releaseDate=&page="
 	r.GET("/songs/", h.GetSongs)
 
-	//r.POST("/songs/", h.AddSong)
+	r.POST("/songs/", h.AddSong)
 
 	r.PUT("/songs/", h.UpdateSong)
 
@@ -84,4 +85,136 @@ func (h Handler) GetSongs(c *gin.Context) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(songsListJSON)
+}
+
+// @Summary GetSongText
+// @Tags song
+// @Description display song's info
+// @Produce      json
+// @Success      200  {object}  model.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router /groups/:groupName/songs/:songName [get]
+func (h Handler) GetSongText(c *gin.Context) {
+	r, w := c.Request, c.Writer
+	groupName := c.Param("groupName")
+	songName := c.Param("songName")
+	verse := r.URL.Query().Get("verse")
+
+	song, err := h.usecase.GetSongText(groupName, songName, verse)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	songTextJSON := SongTextJSON(song)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(songTextJSON)
+}
+
+// @Summary AddSong
+// @Tags add_song
+// @Description add song
+// @Accept      json
+// @Success      201  {object}  model.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object} error
+// @Router /songs/add_song/ [post]
+func (h Handler) AddSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
+	var songJSON SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
+	if err != nil {
+		log.Logger.Warn("Error decoding JSON: ", err)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
+
+	if songJSON.GroupName == "" || songJSON.SongName == "" {
+		log.Logger.Warn("GroupName or Song fields are empty")
+		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	err = h.usecase.AddSong(songJSON.GroupName, songJSON.SongName)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Song added successfully"})
+}
+
+// @Summary UpdateSong
+// @Tags songs
+// @Description update song
+// @Accept      json
+// @Success      200  {object}  model.Song
+// @Failure      400  {object}  error
+// @Failure      500  {object}  error
+// @Router /songs/ [put]
+func (h Handler) UpdateSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
+	var songJSON SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
+	if err != nil {
+		log.Logger.Warn("Error decoding JSON: ", err)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
+
+	song := entity.Song(songJSON)
+	err = h.usecase.UpdateSong(song)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Song updated successfully!"})
+}
+
+// @Summary DeleteSong
+// @Tags delete_song
+// @Description delete song
+// @Accept      json
+// @Success      200  {object}  model.Song
+// @Failure      400  {object}  error
+// @Failure      404  {object}  error
+// @Failure      500  {object}  error
+// @Router /songs/delete_song/ [delete]
+func (h Handler) DeleteSong(c *gin.Context) {
+	r, w := c.Request, c.Writer
+	var songJSON SongJSON
+	err := json.NewDecoder(r.Body).Decode(&songJSON)
+	if err != nil {
+		log.Logger.Warn("Error decoding JSON: ", err)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	log.Logger.Debugf("Decoded song: %+v", songJSON)
+
+	if songJSON.GroupName == "" || songJSON.SongName == "" {
+		log.Logger.Warn("GroupName or Song fields are empty")
+		http.Error(w, "Group and Song fields cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	err = h.usecase.DeleteSong(songJSON.GroupName, songJSON.SongName)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Song deleted successfully"})
 }

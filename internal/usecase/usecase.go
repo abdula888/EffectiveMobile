@@ -4,19 +4,24 @@ import (
 	"EffectiveMobile/internal/config"
 	"EffectiveMobile/internal/domain/entity"
 	"EffectiveMobile/internal/infrastructure/postgres/model"
+	"EffectiveMobile/pkg/api/audd"
+	"EffectiveMobile/pkg/api/lastfm"
 	"EffectiveMobile/pkg/db/conn"
 	"EffectiveMobile/pkg/log"
+	"encoding/json"
 	"strconv"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 type repository interface {
 	GetSongs(db *gorm.DB, limit, offset int, filter entity.SongsFilter) ([]model.Song, error)
-	GetSongText()
-	AddSong()
-	UpdateSong()
-	DeleteSong()
+	GetSongText(db *gorm.DB, groupName, songName string) (model.Song, error)
+	AddSong(db *gorm.DB, song entity.Song) error
+	UpdateSong(db *gorm.DB, song entity.Song) error
+	DeleteSong(db *gorm.DB, groupName, songName string) error
 }
 
 type Usecase struct {
@@ -71,18 +76,147 @@ func (u *Usecase) GetSongs(filter entity.SongsFilter) ([]entity.SongsList, error
 	return songsList, nil
 }
 
-func (u *Usecase) GetSongText() {
+func (u *Usecase) GetSongText(groupName, songName, verse string) (entity.SongText, error) {
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
+	if err != nil {
+		log.Logger.Error("Failed to connect to the database:", err)
+		return entity.SongText{}, err
+	}
+	log.Logger.Debug("Successfully connected to the database")
 
+	song, err := u.repository.GetSongText(db, groupName, songName)
+	if err != nil {
+		log.Logger.Warnf("Song not found: Group=%s, Song=%s", groupName, songName)
+		return entity.SongText{}, err
+	}
+	log.Logger.Infof("Song retrieved: %s - %s", groupName, songName)
+
+	// Разделяем текст песни на куплеты
+	verses := strings.Split(song.Text, "\n\n")
+	log.Logger.Debugf("Total verses: %d", len(verses))
+
+	// Получаем параметр текущего куплета из URL
+	if verse == "" {
+		verse = "1"
+	}
+	log.Logger.Debugf("Verse parameter: %s", verse)
+
+	verse = strings.Trim(verse, "/")
+	verseNumber, err := strconv.Atoi(verse)
+	if err != nil || verseNumber < 1 || verseNumber > len(verses) {
+		log.Logger.Warnf("Invalid verse number: %s", verse)
+		return entity.SongText{}, err
+	}
+	log.Logger.Infof("Displaying verse %d for song %s - %s", verseNumber, groupName, songName)
+
+	// Текущий куплет
+	currentVerse := verses[verseNumber-1]
+
+	return entity.SongText{GroupName: song.GroupName, SongName: song.SongName, VerseNumber: verseNumber,
+		Verse: currentVerse, ReleaseDate: song.ReleaseDate, Link: song.Link, FullText: song.Text}, nil
 }
 
-func (u *Usecase) AddSongHandler() {
+func (u *Usecase) AddSong(groupName, songName string) error {
 
+	song := entity.Song{GroupName: groupName, SongName: songName}
+	audDData, err := audd.GetAudDData(song.GroupName, song.SongName, u.conf.AuddAPI.AuddAPIKey, u.conf.AuddAPI.AuddAPIURL)
+	if err != nil {
+		log.Logger.Error("Error fetching song data from AudD: ", err)
+		return err
+	}
+	log.Logger.Debugf("AudD data retrieved")
+
+	lastFmData, err := lastfm.GetLastFmData(song.GroupName, song.SongName, u.conf.LastFMAPI.LastFMAPIKey, u.conf.LastFMAPI.LastFMAPIURL)
+	if err != nil {
+		log.Logger.Error("Error fetching song data from Last.fm: ", err)
+		return err
+	}
+	log.Logger.Debugf("Last.fm data retrieved")
+
+	if lastFmData.Track.Wiki.Published != "" {
+		song.ReleaseDate, err = time.Parse("02 Jan 2006, 15:04", lastFmData.Track.Wiki.Published)
+		if err != nil {
+			log.Logger.Error("Error parsing release date: ", err)
+			return err
+		}
+		log.Logger.Debugf("Parsed release date: %s", song.ReleaseDate)
+	} else {
+		log.Logger.Info("No release date found in Last.fm API response")
+		song.ReleaseDate = time.Time{}
+	}
+
+	song.Text = audDData.Result[0].Lyrics
+	log.Logger.Debugf("Fetched song lyrics")
+
+	var media []audd.Media
+	err = json.Unmarshal([]byte(audDData.Result[0].Media), &media)
+	if err != nil {
+		log.Logger.Error("Error parsing media field: ", err)
+		return err
+	}
+	log.Logger.Debugf("Parsed media field: %+v", media)
+
+	for _, m := range media {
+		if m.Provider == "youtube" {
+			song.Link = m.URL
+			break
+		}
+	}
+	if song.Link == "" {
+		log.Logger.Warn("YouTube link not found")
+	} else {
+		log.Logger.Debugf("YouTube link found: %s", song.Link)
+	}
+
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
+	if err != nil {
+		log.Logger.Error("Failed to connect to the database:", err)
+		return err
+	}
+	log.Logger.Debug("Successfully connected to the database")
+
+	err = u.repository.AddSong(db, song)
+	if err != nil {
+		log.Logger.Warnf("Error adding song: %s", err)
+		return err
+	}
+
+	log.Logger.Infof("Song inserted into database: %s - %s", song.GroupName, song.SongName)
+	return nil
 }
 
-func (u *Usecase) UpdateSong() {
+func (u *Usecase) UpdateSong(song entity.Song) error {
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
+	if err != nil {
+		log.Logger.Error("Failed to connect to the database:", err)
+		return err
+	}
+	log.Logger.Debug("Successfully connected to the database")
 
+	err = u.repository.UpdateSong(db, song)
+	if err != nil {
+		log.Logger.Error("Error updating song in database:", err)
+		return err
+	}
+	log.Logger.Infof("Song updated successfully: %+v", song)
+
+	return nil
 }
 
-func (u *Usecase) DeleteSongHandler() {
+func (u *Usecase) DeleteSong(groupName, songName string) error {
+	db, err := conn.InitDB("postgres://test_user:password@localhost:5432/test_db?sslmode=disable")
+	if err != nil {
+		log.Logger.Error("Failed to connect to the database:", err)
+		return err
+	}
+	log.Logger.Debug("Successfully connected to the database")
 
+	err = u.repository.DeleteSong(db, groupName, songName)
+	if err != nil {
+		log.Logger.Warnf("Error delete song: %s", err)
+		return err
+	}
+	log.Logger.Infof("Song deleted successfully: Group=%s, Song=%s", groupName, songName)
+
+	return nil
 }

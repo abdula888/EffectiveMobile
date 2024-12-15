@@ -11,6 +11,15 @@ type SongJSON struct {
 	Link        string    `json:"link"`
 }
 
+type SongTextJSON struct {
+	GroupName   string    `json:"group_name"`
+	SongName    string    `json:"song_name"`
+	VerseNumber int       `json:"verse_number"`
+	Verse       string    `json:"verse"`
+	ReleaseDate time.Time `json:"releaseDate"`
+	Link        string    `json:"link"`
+	FullText    string    `json:"full_text"`
+}
 type SongsListJSON struct {
 	GroupName   string    `json:"group_name"`
 	SongName    string    `json:"song_name"`

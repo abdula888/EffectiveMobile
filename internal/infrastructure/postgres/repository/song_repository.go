@@ -43,40 +43,21 @@ func (u *Repo) GetSongs(db *gorm.DB, limit, offset int, filter entity.SongsFilte
 	return songs, nil
 }
 
-func (u *Repo) GetSongText() {
+func (u *Repo) GetSongText(db *gorm.DB, groupName string, songName string) (model.Song, error) {
+	var song model.Song
 
-}
+	err := db.Table("songs s").Joins("join groups g on s.group_id = g.id").
+		Where("s.song_name = ? AND g.group_name = ?", songName, groupName).Last(&song).Error
 
-func (u *Repo) AddSong() {
-
-}
-
-func (u *Repo) UpdateSong() {
-
-}
-
-func (u *Repo) DeleteSong() {
-
-}
-
-func GetSongText(db *gorm.DB, groupName string, songName string) (*model.Song, error) {
-	var song *model.Song
-
-	db.Table("songs s").Joins("join groups g on s.group_id = g.id").
-		Where("s.song_name = ? AND g.group_name = ?", songName, groupName).Last(&song)
-
+	if err != nil {
+		return model.Song{}, err
+	}
 	song.GroupName = groupName
 
 	return song, nil
 }
 
-func UpdateSong(db *gorm.DB, song model.Song) error {
-	db.Model(&song).Where("group_id = ? AND song_name = ?", song.GroupID, song.SongName).Updates(model.Song{Text: song.Text, ReleaseDate: song.ReleaseDate, Link: song.Link})
-
-	return nil
-}
-
-func AddSong(db *gorm.DB, song model.Song) error {
+func (u *Repo) AddSong(db *gorm.DB, song entity.Song) error {
 	group := &model.Group{GroupName: song.GroupName}
 	err := db.First(&group, "group_name = ?", group.GroupName).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -85,15 +66,25 @@ func AddSong(db *gorm.DB, song model.Song) error {
 			return err
 		}
 	}
-	song.GroupID = group.ID
-	err = db.Create(&song).Error
+	songDB := model.Song{GroupID: group.ID, SongName: song.SongName, Text: song.Text,
+		ReleaseDate: song.ReleaseDate, Link: song.Link}
+	err = db.Create(&songDB).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func DeleteSong(db *gorm.DB, songName, groupName string) error {
+func (u *Repo) UpdateSong(db *gorm.DB, song entity.Song) error {
+	songDB := model.Song{GroupName: song.GroupName, SongName: song.SongName,
+		Text: song.Text, ReleaseDate: song.ReleaseDate, Link: song.Link}
+
+	db.Model(&songDB).Where("group_id = ? AND song_name = ?", songDB.GroupID, songDB.SongName).Updates(model.Song{Text: songDB.Text, ReleaseDate: songDB.ReleaseDate, Link: songDB.Link})
+
+	return nil
+}
+
+func (u *Repo) DeleteSong(db *gorm.DB, groupName, songName string) error {
 	var group model.Group
 	err := db.First(&group, "group_name = ?", groupName).Error
 	if err != nil {
