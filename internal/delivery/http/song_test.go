@@ -6,7 +6,7 @@ import (
 )
 
 func TestGetSongs(t *testing.T) {
-	resp, err := http.Get("http://localhost:8080/songs/")
+	resp, err := http.Get("http://localhost:8080/songs")
 	if err != nil {
 		t.Fatalf("Ошибка при выполнении запроса: %v", err)
 	}

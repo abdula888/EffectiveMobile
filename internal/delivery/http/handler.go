@@ -5,7 +5,6 @@ import (
 	"EffectiveMobile/pkg/log"
 	"encoding/json"
 	"net/http"
-	"net/url"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -35,24 +34,24 @@ func NewRouter(usecase usecase) *gin.Engine {
 
 	r.GET("/groups/:groupName/songs/:songName", h.GetSongText)
 
-	// Filter - "songs/?group=Eminem&song=&releaseDate=&page="
-	r.GET("/songs/", h.GetSongs)
+	// Filter - "songs?group=Eminem&song=&releaseDate=&page="
+	r.GET("/songs", h.GetSongs)
 
-	r.POST("/songs/", h.AddSong)
+	r.POST("/songs", h.AddSong)
 
-	r.PUT("/songs/", h.UpdateSong)
+	r.PUT("/songs", h.UpdateSong)
 
-	r.DELETE("/songs/", h.DeleteSong)
+	r.DELETE("/songs", h.DeleteSong)
 
 	return r
 }
 
-func getSongsFilter(url url.URL) entity.SongsFilter {
+func getSongsFilter(c *gin.Context) entity.SongsFilter {
 	// Получаем параметры фильтра
-	group := url.Query().Get("group")
-	song := url.Query().Get("song")
-	releaseDate := url.Query().Get("releaseDate")
-	page := url.Query().Get("page")
+	group, _ := c.GetQuery("group")
+	song, _ := c.GetQuery("song")
+	releaseDate, _ := c.GetQuery("releaseDate")
+	page, _ := c.GetQuery("page")
 
 	return entity.SongsFilter{Group: group, Song: song, ReleaseDate: releaseDate, Page: page}
 }
@@ -67,9 +66,9 @@ func getSongsFilter(url url.URL) entity.SongsFilter {
 // @Failure      500  {object}  error
 // @Router /songs/ [get]
 func (h Handler) GetSongs(c *gin.Context) {
-	r, w := c.Request, c.Writer
+	w := c.Writer
 
-	filter := getSongsFilter(*r.URL)
+	filter := getSongsFilter(c)
 
 	songsList, err := h.usecase.GetSongs(filter)
 	if err != nil {
@@ -97,10 +96,10 @@ func (h Handler) GetSongs(c *gin.Context) {
 // @Failure      500  {object}  error
 // @Router /groups/:groupName/songs/:songName [get]
 func (h Handler) GetSongText(c *gin.Context) {
-	r, w := c.Request, c.Writer
+	w := c.Writer
 	groupName := c.Param("groupName")
 	songName := c.Param("songName")
-	verse := r.URL.Query().Get("verse")
+	verse, _ := c.GetQuery("verse")
 
 	song, err := h.usecase.GetSongText(groupName, songName, verse)
 	if err != nil {
@@ -122,7 +121,7 @@ func (h Handler) GetSongText(c *gin.Context) {
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object} error
-// @Router /songs/add_song/ [post]
+// @Router /songs [post]
 func (h Handler) AddSong(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON SongJSON
@@ -158,7 +157,7 @@ func (h Handler) AddSong(c *gin.Context) {
 // @Success      200  {object}  model.Song
 // @Failure      400  {object}  error
 // @Failure      500  {object}  error
-// @Router /songs/ [put]
+// @Router /songs [put]
 func (h Handler) UpdateSong(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON SongJSON
@@ -190,7 +189,7 @@ func (h Handler) UpdateSong(c *gin.Context) {
 // @Failure      400  {object}  error
 // @Failure      404  {object}  error
 // @Failure      500  {object}  error
-// @Router /songs/delete_song/ [delete]
+// @Router /songs [delete]
 func (h Handler) DeleteSong(c *gin.Context) {
 	r, w := c.Request, c.Writer
 	var songJSON SongJSON
