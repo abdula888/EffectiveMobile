@@ -12,7 +12,7 @@ services:
       
 
   db:
-    image: postgres
+    image: postgres:17-alpine
     restart: always
     ports:
       - "5433:5432" # Порт для доступа к PostgreSQL
