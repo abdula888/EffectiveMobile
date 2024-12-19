@@ -9,7 +9,8 @@ services:
       - db # Зависимость от базы данных
     env_file:
       - configs/.env # Подключение файла .env
-      
+    volumes:
+      - .:/app
 
   db:
     image: postgres:17-alpine
