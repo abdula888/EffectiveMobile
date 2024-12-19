@@ -29,7 +29,7 @@ type (
 )
 
 func NewConfig() (*Config, error) {
-	err := godotenv.Load("../../configs/.env")
+	err := godotenv.Load("./configs/.env")
 
 	databaseURL := os.Getenv("DATABASE_URL")
 	logLevel := os.Getenv("LOG_LEVEL")

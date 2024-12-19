@@ -5,13 +5,16 @@ FROM golang
 WORKDIR /app
 
 # Копируем файлы
-COPY . .
+COPY ./go.mod .
+COPY ./go.sum .
 
 # Загружаем зависимости
 RUN go mod download
 
+COPY . .
+
 # Собираем приложение
-RUN go build -o main ./cmd
+RUN go build -o main ./cmd/effective-mobile/
 
 # Указываем команду для запуска приложения
 CMD ["./main"]

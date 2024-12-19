@@ -8,7 +8,8 @@ services:
     depends_on:
       - db # Зависимость от базы данных
     env_file:
-      - .env # Подключение файла .env
+      - configs/.env # Подключение файла .env
+      
 
   db:
     image: postgres
