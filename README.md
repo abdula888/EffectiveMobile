@@ -2,7 +2,9 @@
 **Тестовое задание для Effective Mobile**  
 ## Стек технологий
 - **Backend**: Golang
-- **База данных**: PostgreSQL
+- **Framework**: Gin
+- **База данных**: PostgreSQL, GORM, ClickHouse
+- **Документация**: Swagger
 - **Контейнеризация**: Docker Compose  
 
 ## REST методы  
